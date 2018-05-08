@@ -178,9 +178,7 @@ response are identical as follows:
   
 ### Example of a DMI Transaction ###
 
-```
-#257#DMIþ1.4þDAFQþdev_rtþUTþ123456789012345þþ123456789ý1503944062þ18385þ47426þCoreWSý2.0þþþþþþSDAFQþ16þ0þFþSTANDARDþSINGLEKEYþþVIEWþPERSONþ0þFIRST.NAME,LAST.NAMEþ1234567þPHYSþþPERSON.ENDþSDAFQ.ENDþSDHSQþ5þ0þ195CE39912D366249B8C4B1C58477CD6B3B989DAþSDHSQ.END#END#
-```
+    #257#DMIþ1.4þDAFQþdev_rtþUTþ123456789012345þþ123456789ý1503944062þ18385þ47426þCoreWSý2.0þþþþþþSDAFQþ16þ0þFþSTANDARDþSINGLEKEYþþVIEWþPERSONþ0þFIRST.NAME,LAST.NAMEþ1234567þPHYSþþPERSON.ENDþSDAFQ.ENDþSDHSQþ5þ0þ195CE39912D366249B8C4B1C58477CD6B3B989DAþSDHSQ.END#END#
 
 The above DMI Transaction is a request for the columns FIRST.NAME and LAST.NAME from the table PERSON for a single
 record with a primary key of 1234567. Notice that there is a header and footer wrapped in hash marks (`#256#` and 
@@ -190,24 +188,18 @@ array values.
 
 #### Header, Body and Footer ####
 
-```
-#257#
-```
-
 The header of the transactions specified the number of bytes that follow the header. This includes the bytes of the
 footer. For this request we see that there are 256 bytes.
 
-```
-DMIþ1.4þDAFQþdev_rtþUTþ123456789012345þþ123456789ý1503944062þ18385þ47426 ...
-```
+    #257#
 
 The body of the transaction is the delimited data (more on that below)
 
-```
-#END#
-``` 
+    DMIþ1.4þDAFQþdev_rtþUTþ123456789012345þþ123456789ý1503944062þ18385þ47426 ...
 
 Finally we have the footer of the transaction which just indicates that this is the end.
+
+    #END#
 
 #### Body in Detail ####
 
@@ -223,7 +215,7 @@ common for all DMI transactions):
 6.  123456789012345       (token - see below for description)
 7.                        (listener id)
 8.  123456789ý1503944062  (control id - see below for description)
-9.  18385                 (data of DMI request in UniData format)
+9.  18385                 (date of DMI request in UniData format)
 10. 47426                 (time of DMI request in UniData format)
 11. CoreWSý2.0            (who request was created by)
 12.                       (type of transaction this is in response to)
@@ -264,7 +256,7 @@ secret into the value and hashing it:
 1. SDHSQ                                      (type of sub-transaction - always begins with "S")
 2. 5                                          (number of lines of this sub-transaction)
 3. 0                                          (MIO level - usually 0)
-4. BCFC0CE57B015A7BAF901149A695EC65883C4896   (SHA1 has value)
+4. BCFC0CE57B015A7BAF901149A695EC65883C4896   (SHA1 hash value)
 5. SDHSQ.END                                  (end of sub-transaction)
 ```
 
@@ -273,9 +265,7 @@ secret into the value and hashing it:
 
 The response to this transaction:
 
-```
-#189#DMIþ1.4þDAFSþdev_rtþUTþ123456789012345þþ123456789ýj1þ18385þ48114þHOSTþDAFQþþþ18385þ48114þSDAFSþ19þ0þFþSTANDARDþSINGLEKEYþþSINGLEþPERSONþ3þþ123456789þþþAykroydþþDanþPERSON.ENDþSDAFS.END#END#
-```
+    #189#DMIþ1.4þDAFSþdev_rtþUTþ123456789012345þþ123456789ýj1þ18385þ48114þHOSTþDAFQþþþ18385þ48114þSDAFSþ19þ0þFþSTANDARDþSINGLEKEYþþSINGLEþPERSONþ3þþ123456789þþþAykroydþþDanþPERSON.ENDþSDAFS.END#END#
 
 Broken down:
 
@@ -291,7 +281,7 @@ Broken down:
 9.  18385
 10. 48114
 11. HOST
-12. DAFQ
+12. DAFQ        (type of transaction this is in response to)
 13. 
 14. 
 15. 18385
@@ -310,23 +300,24 @@ Broken down:
 28. 123456789   (primary key of the record)
 29. 
 30. 
-31. Aykroyd     (LAST.NAME)
-32.             (SOURCE - not requested so it's blank)
-33. Dan         (FIRST.NAME)
+31. Aykroyd     (data for LAST.NAME)
+32.             (data for SOURCE - blank as this field was not requested)
+33. Dan         (data for FIRST.NAME)
 34. PERSON.END 
 35. SDAFS.END
 ```
 
 Notice that this follows the same pattern as the request, with some different fields filled in. The transaction and
-sub-transaction types are ``DAFQ`` and ``SDAFQ`` respectively and indicate they are in response to a ``SDAFS`` request.
+sub-transaction types are `DAFS` and `SDAFS` respectively and indicate they are in response to a ``DAFQ`` request.
 
-The key of the returned record is on line #28.
+The key of the returned record is on line #28 (1234567)
 
-The record data starts on line 31. The returned data is in field position order in the table. Only those columns
+The record data starts on line 31. The returned data is in field position order on the table. Only those columns
 requested are returned, however, field positions are still maintained. Hence line #32 is blank as it would correspond to
-the column ``SOURCE`` in ``PERSON``.
+the column `SOURCE` in `PERSON`.
 
 In other words, line 31 - 33 are as follows:
+
 ```
 31. Aykroyd   - LAST.NAME, which is the first field in PERSON
 32.           - SOURCE, which is the second field in PERSON (not requested so it's blank)
