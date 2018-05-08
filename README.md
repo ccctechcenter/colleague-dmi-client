@@ -72,7 +72,7 @@ There are a few configurable items for each service that can be configured after
 
 __DmiService__
 
-1. `authorizationExpirationMs` - Authorization expiration in milliseconds. Defaults to 4 hours. When authorization expires, 
+1. `authorizationExpirationSeconds` - Authorization expiration. Defaults to 4 hours. When authorization expires, 
    the DMI Service will request new credentials via a login request.
 2. `maxDmiTransactionRetry` - Maximum retry sending / receiving a DMI Transaction. Default is 3.
 
