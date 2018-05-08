@@ -4,7 +4,7 @@
     
     mvn clean test     - run unit tests and code coverage
     mvn clean compile  - compile
-    mvn clean package  - package (jar)
+    mvn clean package  - package (jar) and create javadoc
 
 ## Nexus ##
 
@@ -50,18 +50,44 @@ boolean secure = false;
 String hostnameOverride = null;
 String sharedSecret = "shared-secret";
 
+// size of connection pool (max number of connections)
+int poolSize = 10;
+
 // number of seconds to hold entity metadata in the cache (24 hours for this example)
 int metadataCacheSeconds = 86400; 
 
-DmiService dmiService = new DmiService(account, username, password, ipAddress, port, secure, hostnameOverride, sharedSecret);
-DmiCTXService dmiCTXService = new DmiCTXService(dmiService);
-EntityMetadataService entityMetadataService = new EntityMetadataService(dmiCTXService, metadataCacheSeconds);
-DmiDataService dmiDataService = new DmiDataService(dmiService, entityMetadataService);
+try (DmiService dmiService = new DmiService(account, username, password, ipAddress, port, secure, hostnameOverride, sharedSecret, poolSize)) {
+    DmiCTXService dmiCTXService = new DmiCTXService(dmiService);
+    EntityMetadataService entityMetadataService = new EntityMetadataService(dmiCTXService, metadataCacheSeconds);
+    DmiDataService dmiDataService = new DmiDataService(dmiService, entityMetadataService);
+    
+    // perform code here ... 
+}
 ```
+
+> Important note: `DmiService` implements `Closeable`. It's important to wrap it in a try-with-resources statement like
+> above or a try-finally block (calling `close()` in `finally`), to ensure the DMI Service is closed. This will ensure
+> all open sockets are closed when the service is closed. Better yet, use Spring Boot (below) and it should
+> automatically handle this when the bean is destroyed.
+
+#### Optional Configuration ####
+
+There are a few configurable items for each service that can be configured after instantiation:
+
+__DmiService__
+
+1. `authorizationExpirationMs` - Authorization expiration in milliseconds. Defaults to 4 hours. When authorization expires, 
+   the DMI Service will request new credentials via a login request.
+2. `maxDmiTransactionRetry` - Maximum retry sending / receiving a DMI Transaction. Default is 3.
+
+__EntityMetadataService__
+
+1. `cacheExpirationSeconds` - Number of seconds before a cache entry will expire. Default is 24 hours.
+
 
 #### Create Spring Beans (recommended if using Spring Boot) ####
 
-Configuration class:
+Configuration class (includes all required and optional parameters):
 
 ```java
 @Configuration
@@ -72,11 +98,22 @@ public class DmiClientConfig {
                                  @Value("${dmi.username}") String username,
                                  @Value("${dmi.password}") String password,
                                  @Value("${dmi.host}") String host,
-                                 @Value("${dmi.port}") String port,
+                                 @Value("${dmi.port}") int port,
                                  @Value("${dmi.secure:false}") boolean secure,
-                                 @Value("${dmi.host.name.override:}") String hostnameOverride,
-                                 @Value("${dmi.shared.secret}") String sharedSecret) {
-        return new DmiService(account, username, password, host, port, secure, hostnameOverride, sharedSecret);
+                                 @Value("${dmi.host.name.override:null}") String hostnameOverride,
+                                 @Value("${dmi.shared.secret}") String sharedSecret,
+                                 @Value("${dmi.pool.size:10}") int poolSize,
+                                 @Value("${dmi.authorization.expiration.seconds:-1}") long authorizationExpirationSeconds,
+                                 @Value("${dmi.max.transaction.retry:-1}") int maxDmiTransactionRetry) {
+        DmiService d = new DmiService(account, username, password, host, port, secure, hostnameOverride, sharedSecret, poolSize);
+        
+        if (authorizationExpirationSeconds >= 0)
+            d.setAuthorizationExpirationSeconds(authorizationExpirationSeconds);
+        
+        if (maxDmiTransactionRetry >= 0)
+            d.setMaxDmiTransactionRetry(maxDmiTransactionRetry);
+        
+        return d;
     }
 
     @Bean
@@ -86,8 +123,13 @@ public class DmiClientConfig {
 
     @Bean
     public EntityMetadataService entityMetadataService(DmiCTXService dmiCTXService, 
-                                                       @Value("${dmi.metadata.cache.seconds:86400}") int metadataCacheSeconds) {
-        return new EntityMetadataService(dmiCTXService, metadataCacheSeconds);
+                                                       @Value("${dmi.metadata.expiration.seconds:-1}") int metadataExpirationSeconds) {
+        EntityMetadataService e = new EntityMetadataService(dmiCTXService);
+        
+        if (metadataExpirationSeconds >= 0)
+            e.setCacheExpirationSeconds(metadataExpirationSeconds);
+        
+        return e;
     }
 
     @Bean
@@ -108,6 +150,9 @@ dmi.port=1234
 dmi.secure=false
 dmi.host.name.override= 
 dmi.shared.secret=shared-secret
+dmi.pool.size=10
+dmi.authorization.expiration.seconds=14400
+dmi.max.transaction.retry=3
 dmi.metadata.cache.seconds=86400
 ```
 

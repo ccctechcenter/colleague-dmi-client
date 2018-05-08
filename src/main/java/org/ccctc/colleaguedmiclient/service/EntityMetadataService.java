@@ -1,6 +1,8 @@
 package org.ccctc.colleaguedmiclient.service;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.ccctc.colleaguedmiclient.exception.DmiTransactionException;
 import org.ccctc.colleaguedmiclient.model.CddEntry;
 import org.ccctc.colleaguedmiclient.model.EntityMetadata;
@@ -28,18 +30,20 @@ import java.util.concurrent.ConcurrentHashMap;
 public class EntityMetadataService {
 
     private final DmiCTXService dmiCTXService;
-    private final long cacheSeconds;
     private final Map<String, CacheEntry> cache;
+
+    /**
+     * Number of seconds before a cache entry will expire. Default is 24 hours.
+     */
+    @Getter @Setter private long cacheExpirationSeconds = 24 * 60 * 60;
 
     /**
      * Create Entity Metadata Service
      *
      * @param dmiCTXService DMI Colleague Transaction Service
-     * @param cacheSeconds  Cache expiration seconds
      */
-    public EntityMetadataService(DmiCTXService dmiCTXService, int cacheSeconds) {
+    public EntityMetadataService(DmiCTXService dmiCTXService) {
         this.dmiCTXService = dmiCTXService;
-        this.cacheSeconds = cacheSeconds;
         this.cache = new ConcurrentHashMap<>();
     }
 
@@ -177,7 +181,7 @@ public class EntityMetadataService {
      */
     private void cacheAdd(String appl, String entityName, EntityMetadata entityMetadata) {
         String key = appl + "*" + entityName;
-        CacheEntry c = new CacheEntry(key, entityMetadata, LocalDateTime.now().plusSeconds(cacheSeconds));
+        CacheEntry c = new CacheEntry(key, entityMetadata, LocalDateTime.now().plusSeconds(cacheExpirationSeconds));
         cache.put(appl + "*" + entityName, c);
     }
 

@@ -4,10 +4,14 @@ import lombok.Data;
 
 import java.util.Map;
 
+/**
+ * Colleague data for a single record. Contains a key (primary key of the record) and Map of key/value pairs for the rest
+ * of the fields.
+ */
 @Data
 public class ColleagueData {
     /**
-     * Primary key
+     * Primary key of record
      */
     private final String key;
 
@@ -15,9 +19,4 @@ public class ColleagueData {
      * Field names and values
      */
     private final Map<String, Object> values;
-
-    public <T> T value(String key) {
-        Object value = values.get(key);
-        return (T) value;
-    }
 }

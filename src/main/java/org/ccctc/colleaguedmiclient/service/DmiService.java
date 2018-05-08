@@ -41,7 +41,7 @@ public class DmiService implements Closeable {
     /**
      * DMI Password
      */
-    @Getter private final String password;
+    private final String password;
 
     /**
      * Host / IP Address
@@ -69,20 +69,21 @@ public class DmiService implements Closeable {
     @Getter private final String sharedSecret;
 
     /**
-     * Authorization expiration in milliseconds. Defaults to 4 hours.
+     * Authorization expiration in seconds. Defaults to 4 hours.
      */
-    @Getter @Setter private long authorizationExpirationMs = 4 * 60 * 60 * 1000;
+    @Getter @Setter private long authorizationExpirationSeconds = 4 * 60 * 60;
 
     /**
-     * Maximum retry on a DMI socket error.
+     * Maximum retry sending / receiving a DMI Transaction. Default is 3.
      */
-    @Getter @Setter private int maximumConnectionRetry = 5;
+    @Getter @Setter private int maxDmiTransactionRetry = 3;
 
     /**
      * Pooling socket factory used by this service to send and receive data from the DMI.
      */
     @Getter private final PoolingSocketFactory socketFactory;
 
+    // current active credentials
     private SessionCredentials sessionCredentials;
 
     // object used to synchronize on when login() is called
@@ -174,7 +175,7 @@ public class DmiService implements Closeable {
                     && result.getToken().length > 0
                     && result.getControlId().length > 0) {
                 sessionCredentials = new SessionCredentials(result.getToken()[0], result.getControlId()[0],
-                        LocalDateTime.now().plus(authorizationExpirationMs, ChronoUnit.MILLIS));
+                        LocalDateTime.now().plus(authorizationExpirationSeconds, ChronoUnit.SECONDS));
             } else {
                 sessionCredentials = null;
                 throw new DmiServiceException("Login request did not return a proper result");
@@ -189,10 +190,9 @@ public class DmiService implements Closeable {
      * @return Response
      */
     public DmiTransaction send(DmiTransaction transaction) {
-        int x = 0;
-        boolean fatal = false;
 
-        while(true) {
+        for(int x = 1; ; x++) {
+            boolean fatal = false;
             Exception ex = null;
             PooledSocket socket = null;
             DataOutputStream os = null;
@@ -220,14 +220,11 @@ public class DmiService implements Closeable {
 
                 if (sub1 != null && sub1.getTransactionType().equals("SERRS")) {
                     String err = String.join(", ", sub1.getCommands());
-                    throw new DmiTransactionException(err);
+                    throw new DmiTransactionException(err, response);
                 }
-
 
                 return response;
             } catch (Exception e) {
-
-                log.error("DMI Service error (may retry) - " + e.getClass().getName() + ": " + e.getMessage());
 
                 // @TODO - determine what might constitute a "fatal" error - for example username/password error
 
@@ -251,12 +248,17 @@ public class DmiService implements Closeable {
             try {
                 Thread.sleep(250);
             } catch (InterruptedException i) {
-                throw new DmiServiceException("Error connecting to Colleague - " + ex.getClass().getName() + ": " + ex.getMessage());
+                throw new DmiServiceException("DMI Service Error (interrupted) - " + ex.getClass().getName() + ": " + ex.getMessage());
             }
 
-            if (++x >= maximumConnectionRetry || fatal) {
-                throw new DmiServiceException("Error connecting to Colleague - " + ex.getClass().getName() + ": " + ex.getMessage());
-            }
+            if (fatal)
+                throw new DmiServiceException("DMI Service Error (fatal error) - " + ex.getClass().getName() + ": " + ex.getMessage());
+
+            if (x >= maxDmiTransactionRetry)
+                throw new DmiServiceException("DMI Service Error (max retry exceeded) - " + ex.getClass().getName() + ": " + ex.getMessage());
+
+            // on retry leave a message in the logger, but continue
+            log.error("DMI Service error (will retry) - " + ex.getClass().getName() + ": " + ex.getMessage());
         }
     }
 

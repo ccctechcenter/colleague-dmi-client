@@ -36,6 +36,9 @@ import java.util.Map;
  */
 public class DmiDataService {
 
+    /**
+     * Batch size for DMI reads (max number of records to read at one time)
+     */
     private static final int batchSize = 1000;
 
     private final DmiService dmiService;
