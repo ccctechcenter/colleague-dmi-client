@@ -49,16 +49,12 @@ int port = 1234;
 boolean secure = false;
 String hostnameOverride = null;
 String sharedSecret = "shared-secret";
-
-// size of connection pool (max number of connections)
 int poolSize = 10;
 
-// number of seconds to hold entity metadata in the cache (24 hours for this example)
-int metadataCacheSeconds = 86400; 
 
 try (DmiService dmiService = new DmiService(account, username, password, ipAddress, port, secure, hostnameOverride, sharedSecret, poolSize)) {
     DmiCTXService dmiCTXService = new DmiCTXService(dmiService);
-    EntityMetadataService entityMetadataService = new EntityMetadataService(dmiCTXService, metadataCacheSeconds);
+    EntityMetadataService entityMetadataService = new EntityMetadataService(dmiCTXService);
     DmiDataService dmiDataService = new DmiDataService(dmiService, entityMetadataService);
     
     // perform code here ... 
