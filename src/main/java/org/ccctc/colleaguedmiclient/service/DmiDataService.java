@@ -434,11 +434,7 @@ public class DmiDataService {
         return null;
     }
 
-    /**
-     * Log before sending a DMI Transaction
-     *
-     * @param transaction DMI Transaction
-     */
+
     private void logSend(String type, DmiTransaction transaction, String table, Iterable<String> columns, String[] keys, String criteria) {
         if (log.isTraceEnabled())
             log.trace("Sending DMI Data Request: " + transaction.toDmiString());
@@ -454,6 +450,7 @@ public class DmiDataService {
                     + ", criteria = " + criteria);
         }
     }
+
 
     private void logReceive(String type, DmiTransaction transaction, String table, int recordCount) {
         if (log.isTraceEnabled())

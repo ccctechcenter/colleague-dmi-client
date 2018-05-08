@@ -113,8 +113,6 @@ public class DmiService implements Closeable {
         this.hostnameOverride = hostnameOverride;
         this.sharedSecret = sharedSecret;
 
-        // @TODO - configuration for each below
-
         // @TODO - secure connection and hostname override
 
         socketFactory = new PoolingSocketFactory(host, port, poolSize);
@@ -163,6 +161,9 @@ public class DmiService implements Closeable {
 
         synchronized (loginLock) {
             LoginRequest loginRequest = new LoginRequest(account, username, password);
+
+            log.info("Sending login request to Colleague DMI");
+
             DmiTransaction result = send(loginRequest);
 
             //
@@ -176,6 +177,8 @@ public class DmiService implements Closeable {
                     && result.getControlId().length > 0) {
                 sessionCredentials = new SessionCredentials(result.getToken()[0], result.getControlId()[0],
                         LocalDateTime.now().plus(authorizationExpirationSeconds, ChronoUnit.SECONDS));
+
+                log.info("Received credentials from DMI. Expiration: " + sessionCredentials.getExpirationDateTime().toString());
             } else {
                 sessionCredentials = null;
                 throw new DmiServiceException("Login request did not return a proper result");
