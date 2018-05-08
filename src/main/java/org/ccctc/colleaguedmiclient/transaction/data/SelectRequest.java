@@ -34,7 +34,7 @@ public class SelectRequest extends DataRequest {
      * @param limitingKeys Limiting keys
      */
     public SelectRequest(String account, String token, String controlId, String sharedSecret, String viewName,
-                         String criteria, Iterable<String> limitingKeys) {
+                         String criteria, String[] limitingKeys) {
         super(account, token, controlId);
 
         String keys = (limitingKeys != null) ? String.join(Character.toString(StringUtils.SM), limitingKeys) : null;

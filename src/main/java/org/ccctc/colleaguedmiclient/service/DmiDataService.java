@@ -1,6 +1,8 @@
 package org.ccctc.colleaguedmiclient.service;
 
 import lombok.NonNull;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.ccctc.colleaguedmiclient.exception.DmiTransactionException;
 import org.ccctc.colleaguedmiclient.model.CddEntry;
 import org.ccctc.colleaguedmiclient.model.ColleagueData;
@@ -36,13 +38,14 @@ import java.util.Map;
  */
 public class DmiDataService {
 
+    private final Log log = LogFactory.getLog(DmiDataService.class);
+    private final DmiService dmiService;
+    private final EntityMetadataService entityMetadataService;
+
     /**
      * Batch size for DMI reads (max number of records to read at one time)
      */
     private static final int batchSize = 1000;
-
-    private final DmiService dmiService;
-    private final EntityMetadataService entityMetadataService;
 
     /**
      * Create a DMI data service. This requires a DMI Service (to send/receive DMI transactions) and an Entity
@@ -88,10 +91,14 @@ public class DmiDataService {
         SingleKeyRequest request = new SingleKeyRequest(dmiService.getAccount(), creds.getToken(), creds.getControlId(),
                 dmiService.getSharedSecret(), viewName, viewType, columns, key);
 
+        logSend("singleKey", request, viewName, columns, new String[] { key }, null);
+
         DmiTransaction dmiReponse = dmiService.send(request);
         List<ColleagueData> data = processResponse(dmiReponse, appl, viewName, columns);
-        if (data != null && data.size() > 0)
-            return data.get(0);
+
+        logReceive("singleKey", dmiReponse, viewName, data.size());
+
+        if (data.size() > 0) return data.get(0);
 
         return null;
     }
@@ -137,9 +144,14 @@ public class DmiDataService {
             BatchKeysRequest request = new BatchKeysRequest(dmiService.getAccount(), creds.getToken(), creds.getControlId(),
                     dmiService.getSharedSecret(), viewName, viewType, columns, keys);
 
-            DmiTransaction dmiReponse = dmiService.send(request);
-            return processResponse(dmiReponse, appl, viewName, columns);
+            logSend("batchKeys", request, viewName, columns, keys, null);
 
+            DmiTransaction dmiReponse = dmiService.send(request);
+            List<ColleagueData> data = processResponse(dmiReponse, appl, viewName, columns);
+
+            logReceive("batchKeys", dmiReponse, viewName, data.size());
+
+            return data;
         } else {
             List<ColleagueData> result = new ArrayList<>();
 
@@ -153,9 +165,14 @@ public class DmiDataService {
                 BatchKeysRequest request = new BatchKeysRequest(dmiService.getAccount(), creds.getToken(), creds.getControlId(),
                         dmiService.getSharedSecret(), viewName, viewType, columns, k);
 
+                logSend("batchKeys", request, viewName, columns, k, null);
+
                 DmiTransaction dmiReponse = dmiService.send(request);
 
                 List<ColleagueData> data = processResponse(dmiReponse, appl, viewName, columns);
+
+                logReceive("batchKeys", dmiReponse, viewName, data.size());
+
                 result.addAll(data);
             }
 
@@ -258,13 +275,18 @@ public class DmiDataService {
      * @param limitingKeys Limiting keys
      * @return List of keys
      */
-    public String[] selectKeys(@NonNull String viewName, String criteria, Iterable<String> limitingKeys) {
+    public String[] selectKeys(@NonNull String viewName, String criteria, String[] limitingKeys) {
         SessionCredentials creds = dmiService.getSessionCredentials();
         SelectRequest request = new SelectRequest(dmiService.getAccount(), creds.getToken(), creds.getControlId(),
                 dmiService.getSharedSecret(), viewName, criteria, limitingKeys);
 
+        logSend("selectKeys", request, viewName, null, null, criteria);
+
         DmiTransaction dmiReponse = dmiService.send(request);
         SelectResponse selectResponse = SelectResponse.fromDmiTransaction(dmiReponse);
+
+        logReceive("selectKeys", dmiReponse, viewName, selectResponse.getKeys().length);
+
         return selectResponse.getKeys();
     }
 
@@ -410,5 +432,34 @@ public class DmiDataService {
         }
 
         return null;
+    }
+
+    /**
+     * Log before sending a DMI Transaction
+     *
+     * @param transaction DMI Transaction
+     */
+    private void logSend(String type, DmiTransaction transaction, String table, Iterable<String> columns, String[] keys, String criteria) {
+        if (log.isTraceEnabled())
+            log.trace("Sending DMI Data Request: " + transaction.toDmiString());
+        else if (log.isInfoEnabled()) {
+            String c = (columns != null ? String.join(",", columns) : "(none)");
+            String k = (keys != null ? String.join(",", keys) : "(none)");
+
+            if (c.length() > 47) c = c.substring(0, 50) + "...";
+            if (k.length() > 47) k = k.substring(0, 50) + "...";
+
+            log.info("Sending DMI Data Request.   Type = " + type + ", table = " + table
+                    + ", columns = " + c + ", keys = " + k
+                    + ", criteria = " + criteria);
+        }
+    }
+
+    private void logReceive(String type, DmiTransaction transaction, String table, int recordCount) {
+        if (log.isTraceEnabled())
+            log.trace("Received DMI Data Response: " + transaction.toDmiString());
+        else if (log.isInfoEnabled())
+            log.info("Received DMI Data Response. Type = " + type + ", table = " + table
+                    + ", records = " + recordCount);
     }
 }

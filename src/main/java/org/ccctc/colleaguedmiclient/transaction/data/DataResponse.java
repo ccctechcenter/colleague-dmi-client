@@ -1,6 +1,7 @@
 package org.ccctc.colleaguedmiclient.transaction.data;
 
 import lombok.Getter;
+import lombok.NonNull;
 import org.ccctc.colleaguedmiclient.exception.DmiTransactionException;
 import org.ccctc.colleaguedmiclient.transaction.DmiSubTransaction;
 import org.ccctc.colleaguedmiclient.transaction.DmiTransaction;
@@ -41,7 +42,7 @@ public class DataResponse {
      * @param transaction DMI Transaction
      * @return Data response
      */
-    public static DataResponse fromDmiTransaction(DmiTransaction transaction) {
+    public static DataResponse fromDmiTransaction(@NonNull DmiTransaction transaction) {
         assert "DAFS".equals(transaction.getTransactionType());
 
         if (transaction.getSubTransactions().size() == 0)
@@ -55,7 +56,7 @@ public class DataResponse {
      *
      * @param subTransaction Sub transaction
      */
-    private DataResponse(DmiSubTransaction subTransaction) {
+    private DataResponse(@NonNull DmiSubTransaction subTransaction) {
 
         if (subTransaction.getTransactionType().equals("SERRS")) {
             if (subTransaction.getCommands() == null || subTransaction.getCommands().length == 0)
@@ -94,7 +95,7 @@ public class DataResponse {
      *
      * @param subTransaction Sub transaction
      */
-    private void Batch(DmiSubTransaction subTransaction) {
+    private void Batch(@NonNull DmiSubTransaction subTransaction) {
 
         String[] commands = subTransaction.getCommands();
 
@@ -161,7 +162,7 @@ public class DataResponse {
      *
      * @param subTransaction Sub transaction
      */
-    private void Single(DmiSubTransaction subTransaction) {
+    private void Single(@NonNull DmiSubTransaction subTransaction) {
 
         String[] commands = subTransaction.getCommands();
 

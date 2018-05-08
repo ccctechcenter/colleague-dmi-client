@@ -204,15 +204,12 @@ public class DmiService implements Closeable {
                 is = new DataInputStream(socket.getInputStream());
                 byte[] bytes = transaction.toDmiBytes();
 
-                if (log.isDebugEnabled())
-                    log.debug("DMI send: " + transaction.debugInfo());
+                if (log.isTraceEnabled()) log.trace("DMI send: " + transaction.debugInfo());
 
                 os.write(bytes);
-
                 DmiTransaction response =  DmiTransaction.fromResponse(is);
 
-                if (log.isDebugEnabled())
-                    log.debug("DMI recv: " + transaction.debugInfo());
+                if (log.isTraceEnabled()) log.trace("DMI recv: " + transaction.debugInfo());
 
                 // check to see if the response is an error
                 DmiSubTransaction sub1 = (response.getSubTransactions().size() > 0)
