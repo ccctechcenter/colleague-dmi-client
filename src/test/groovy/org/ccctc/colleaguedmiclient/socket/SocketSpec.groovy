@@ -19,7 +19,7 @@ class SocketSpec extends Specification {
 
     def "constructor and getters"() {
         when:
-        def f = new PoolingSocketFactory("localhost", testPort, 1)
+        def f = new PoolingSocketFactory("localhost", testPort, 1, false, null)
 
         then:
         f.getHost() == "localhost"
@@ -33,7 +33,7 @@ class SocketSpec extends Specification {
 
     def "pool timeout exceeded"() {
         setup:
-        def f = new PoolingSocketFactory("localhost", testPort, 1)
+        def f = new PoolingSocketFactory("localhost", testPort, 1, false, null)
         f.setPoolTimeoutMs(5)
 
         when:
@@ -50,7 +50,7 @@ class SocketSpec extends Specification {
 
     def "socket timeout exceeded"() {
         setup:
-        def f = new PoolingSocketFactory("localhost", testPort2, 1)
+        def f = new PoolingSocketFactory("localhost", testPort2, 1, false, null)
         f.setSocketConnectTimeoutMs(5)
 
         when:
@@ -66,7 +66,7 @@ class SocketSpec extends Specification {
 
     def "interrupted"() {
         setup:
-        def f = new PoolingSocketFactory("localhost", testPort, 1)
+        def f = new PoolingSocketFactory("localhost", testPort, 1, false, null)
 
         when:
         f.getSocket(false)
@@ -94,7 +94,7 @@ class SocketSpec extends Specification {
 
     def "socket re-used"() {
         setup:
-        def f = new PoolingSocketFactory("localhost", testPort, 1)
+        def f = new PoolingSocketFactory("localhost", testPort, 1, false, null)
 
         when:
         def s = f.getSocket(false)
@@ -110,7 +110,7 @@ class SocketSpec extends Specification {
 
     def "closed socket not re-used"() {
         setup:
-        def f = new PoolingSocketFactory("localhost", testPort, 1)
+        def f = new PoolingSocketFactory("localhost", testPort, 1, false, null)
 
         when:
         def s = f.getSocket(false)
@@ -128,7 +128,7 @@ class SocketSpec extends Specification {
 
     def "expired socket not re-used"() {
         setup:
-        def f = new PoolingSocketFactory("localhost", testPort, 10)
+        def f = new PoolingSocketFactory("localhost", testPort, 10, false, null)
         f.setSocketExpirationMs(100)
 
         when:
@@ -148,7 +148,7 @@ class SocketSpec extends Specification {
 
     def "open and close test"() {
         setup:
-        def f = new PoolingSocketFactory("localhost", testPort, 10)
+        def f = new PoolingSocketFactory("localhost", testPort, 10, false, null)
         def sockets, sockets2, sockets3
 
         when:
@@ -220,7 +220,7 @@ class SocketSpec extends Specification {
 
     def "close factory - used and available sockets should be emptied"() {
         setup:
-        def f = new PoolingSocketFactory("localhost", testPort, 10)
+        def f = new PoolingSocketFactory("localhost", testPort, 10, false, null)
         def s1 = f.getSocket(false)
         def s2 = f.getSocket(false)
 

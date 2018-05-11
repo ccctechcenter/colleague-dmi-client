@@ -1,5 +1,6 @@
 package org.ccctc.colleaguedmiclient.service;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -48,29 +49,9 @@ public class DmiService implements Closeable {
     private final String password;
 
     /**
-     * Host / IP Address
-     */
-    @Getter private final String host;
-
-    /**
-     * Port
-     */
-    @Getter private final int port;
-
-    /**
-     * Use a secure connection?
-     */
-    @Getter private final boolean secure;
-
-    /**
-     * Host name override
-     */
-    @Getter private final String hostnameOverride;
-
-    /**
      * Shared Secret
      */
-    @Getter private final String sharedSecret;
+    @Getter(AccessLevel.PROTECTED) private final String sharedSecret;
 
     /**
      * Authorization expiration in seconds. Defaults to 4 hours.
@@ -86,7 +67,7 @@ public class DmiService implements Closeable {
     /**
      * Pooling socket factory used by this service to send and receive data from the DMI.
      */
-    @Getter private final PoolingSocketFactory socketFactory;
+    @Getter protected final PoolingSocketFactory socketFactory;
 
     // current active credentials
     private SessionCredentials sessionCredentials;
@@ -95,7 +76,7 @@ public class DmiService implements Closeable {
     private final Object loginLock = new Object();
 
     /**
-     * Create and configure the DMI Service
+     * Create and configure the DMI Service. Will use default PoolingSocketFactory.
      *
      * @param account          Account (aka environment)
      * @param username         DMI username
@@ -109,18 +90,27 @@ public class DmiService implements Closeable {
      */
     public DmiService(String account, String username, String password, String host, int port,
                       boolean secure, String hostnameOverride, String sharedSecret, int poolSize) {
+
+        this(account, username, password, sharedSecret,
+                new PoolingSocketFactory(host, port, poolSize, secure, hostnameOverride));
+    }
+
+    /**
+     * Create and configure the DMI Service with an already created {@code PoolingSocketFactor}
+     *
+     * @param account              Account (aka environment)
+     * @param username             DMI username
+     * @param password             DMI password
+     * @param sharedSecret         Shared secret
+     * @param poolingSocketFactory Pooling Socket Factory
+     */
+    public DmiService(String account, String username, String password, String sharedSecret,
+                      PoolingSocketFactory poolingSocketFactory) {
         this.account = account;
         this.username = username;
         this.password = password;
-        this.host = host;
-        this.port = port;
-        this.secure = secure;
-        this.hostnameOverride = hostnameOverride;
         this.sharedSecret = sharedSecret;
-
-        // @TODO - secure connection and hostname override
-
-        socketFactory = new PoolingSocketFactory(host, port, poolSize);
+        this.socketFactory = poolingSocketFactory;
     }
 
     /**
@@ -207,7 +197,7 @@ public class DmiService implements Closeable {
                     }
                 }
 
-                throw new DmiServiceException("Login request failed - no credentials or error message returned");
+                throw new DmiServiceException("Login request failed and no credentials or error message returned");
             }
         }
     }
@@ -318,7 +308,7 @@ public class DmiService implements Closeable {
             response =  DmiTransaction.fromResponse(is);
 
             if (log.isTraceEnabled() && response.getRawResponse() != null)
-                log.trace("DMI recv: " + String.join(Character.toString(StringUtils.FM), response.getRawResponse()));
+                log.trace("DMI recv: " + StringUtils.join(StringUtils.FM, response.getRawResponse()));
 
         } catch (Exception e) {
             ex = e;

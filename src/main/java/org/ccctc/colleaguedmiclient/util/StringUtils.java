@@ -116,6 +116,29 @@ public class StringUtils {
 
 
     /**
+     * Join a string with a delimiter. This differs from the regular Java implementation where null values show up
+     * as "null" which is not desired here (we want them to be empty string instead)
+     *
+     * @param delimiter Delimiter
+     * @param array     Array
+     * @return String
+     */
+    public static String join(Character delimiter, Iterable<String> array) {
+        StringBuilder output = new StringBuilder();
+
+        boolean first = true;
+        for (String a : array) {
+            if (first) first = false;
+            else output.append(delimiter);
+
+            if (a != null) output.append(a);
+        }
+
+        return output.toString();
+    }
+
+
+    /**
      * Compute an SHA1 hash on a string with the shared secret appended (if supplied). FM, VM, SM and TM characters
      * are converted to "," characters.
      * <p>

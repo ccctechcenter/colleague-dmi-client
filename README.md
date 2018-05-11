@@ -190,6 +190,16 @@ The DMI Data Service is used to read data from Colleague.
 @TODO
 
 
+### DMI CTX (Colleague Transaction) Service ###
+
+@TODO
+
+
+### Entity Metadata Service ###
+
+@TODO
+
+
 ## APPENDIX A: The Anatomy of a DMI Transaction ##
 
 ### Disclaimer ###

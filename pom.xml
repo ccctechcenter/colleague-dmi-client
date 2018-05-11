@@ -24,6 +24,7 @@
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
+                    <fork>true</fork>
                 </configuration>
             </plugin>
 
@@ -38,6 +39,10 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.21.0</version>
                 <configuration>
+                    <useUnlimitedThreads>true</useUnlimitedThreads>
+                    <parallel>classes</parallel>
+                    <!-- turn on SimpleLog and "trace" level logging -->
+                    <argLine>@{argLine} -Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.SimpleLog -Dorg.apache.commons.logging.simplelog.defaultlog=trace</argLine>
                     <useFile>false</useFile>
                     <includes>
                         <include>**/*Spec.*</include>
@@ -55,6 +60,10 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <!-- this is needed as there are some UTF-8 characters in the unit tests from the DMI -->
+                    <sourceEncoding>UTF-8</sourceEncoding>
+                </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>org.codehaus.groovy</groupId>

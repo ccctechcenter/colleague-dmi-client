@@ -153,7 +153,7 @@ public class DmiTransaction {
     /**
      * Variable length sub transactions after line 16 of the DMI transaction
      */
-    @Getter private List<DmiSubTransaction> subTransactions;
+    @Getter private List<DmiSubTransaction> subTransactions = new ArrayList<>();
 
     /**
      * Has a hash been added to this request? If so subrequests are closed.
@@ -215,7 +215,6 @@ public class DmiTransaction {
         if (hashAdded)
             throw new DmiTransactionException("Attempted to add sub transaction to a DMI transaction after hash subrequest");
 
-        if (subTransactions == null) subTransactions = new ArrayList<>();
         subTransactions.add(subTransaction);
     }
 

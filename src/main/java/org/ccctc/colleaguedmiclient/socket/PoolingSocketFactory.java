@@ -31,49 +31,48 @@ public class PoolingSocketFactory implements Closeable {
     /**
      * Host name / IP Address
      */
-    @Getter
-    private final String host;
+    @Getter private final String host;
 
     /**
      * Port
      */
-    @Getter
-    private final int port;
+    @Getter private final int port;
 
     /**
      * Pool size
      */
-    @Getter
-    private final int poolSize;
+    @Getter private final int poolSize;
+
+    /**
+     * Use a secure connection?
+     */
+    @Getter private final boolean secure;
+
+    /**
+     * Host name override
+     */
+    @Getter private final String hostnameOverride;
 
     /**
      * Timeout waiting for an available socket. Default value is 5 minutes.
      */
-    @Getter
-    @Setter
-    private int poolTimeoutMs = 5 * 60 * 1000;
+    @Getter @Setter private int poolTimeoutMs = 5 * 60 * 1000;
 
     /**
      * Timeout waiting for a socket to connect. Default value is 5 minutes.
      */
-    @Getter
-    @Setter
-    private int socketConnectTimeoutMs = 5 * 60 * 1000;
+    @Getter @Setter private int socketConnectTimeoutMs = 5 * 60 * 1000;
 
     /**
      * Maximum amount of time a socket will wait for a response after a request has been sent. Default value is 15 minutes.
      */
-    @Getter
-    @Setter
-    private int socketReadTimeoutMs = 15 * 60 * 1000;
+    @Getter @Setter private int socketReadTimeoutMs = 15 * 60 * 1000;
 
     /**
      * Socket expiration time in milliseconds. Default is 30 minutes. This is the longest amount of time a socket will
      * be used for DMI transactions before it is destroyed.
      */
-    @Getter
-    @Setter
-    private int socketExpirationMs = 30 * 60 * 1000;
+    @Getter @Setter private int socketExpirationMs = 30 * 60 * 1000;
 
 
     private final ReentrantLock lock = new ReentrantLock(true);
@@ -89,11 +88,18 @@ public class PoolingSocketFactory implements Closeable {
      * @param host                    Host name or IP address
      * @param port                    Host port
      * @param poolSize                Pool size
+     * @param secure                  Secure (SSL) connection?
+     * @param hostnameOverride        Host name override ?
      */
-    public PoolingSocketFactory(String host, int port, int poolSize) {
+    public PoolingSocketFactory(String host, int port, int poolSize, boolean secure, String hostnameOverride) {
+
+        // @TODO - implement secure and implement hostnameOverride or remove it
+
         this.host = host;
         this.port = port;
         this.poolSize = poolSize;
+        this.secure = secure;
+        this.hostnameOverride = hostnameOverride;
 
         available = new ConcurrentLinkedQueue<>();
         used = new ArrayList<>();
