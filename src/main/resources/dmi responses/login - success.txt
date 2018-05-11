@@ -1,0 +1,49 @@
+DMI
+1.4
+LGRS
+dev0_rt
+UT
+(token)
+
+979697290ýj0
+18394
+57419
+HOST
+LGRQ
+
+DMI_PROCESS_LGRQ
+18394
+57419
+SLGRS
+12
+0
+1
+
+
+
+
+
+
+
+SLGRS.END
+SSTATE
+14
+0
+0
+
+
+
+
+
+
+
+
+
+SSTATE.END
+----- (this line is not part of the transaction. raw transaction below.) -----
+DMIþ1.4þLGRSþdev0_rtþUTþ(token)þþ979697290ýj0þ18394þ57419þHOSTþLGRQþþDMI_PROCESS_LGRQþ18394þ57419þSLGRSþ12þ0þ1þþþþþþþþSLGRS.ENDþSSTATEþ14þ0þ0þþþþþþþþþþSSTATE.END
+-----
+Notes:
+1. The token (line 6) is what we use for subsequent requests
+2. The control ID (first part of line 8) - 979697290 - was passed by the request and returned unmodified here.
+   This value is also used in subsequent requests to authenticate

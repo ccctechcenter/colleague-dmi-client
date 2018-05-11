@@ -1,0 +1,31 @@
+DMI
+1.4
+DAFS
+dev0_rt
+UT
+(token)
+
+979697290ýj1
+18394
+57419
+HOST
+DAFQ
+
+
+18394
+57419
+SERRS
+7
+
+SET
+00019
+Invalid field.   Field="BAD.FIELD". File ="PERSON"
+SERRS.END
+----- (this line is not part of the transaction. raw transaction below.) -----
+DMIþ1.4þDAFSþdev0_rtþUTþ(token)þþ979697290ýj1þ18394þ57419þHOSTþDAFQþþþ18394þ57419þSERRSþ7þþSETþ00019þInvalid field.   Field="BAD.FIELD". File ="PERSON"þSERRS.END
+-----
+Notes:
+1. This is a response to a data request - notice line #12 indicates what this is in response to. Also notice
+   that the transaction type on line 3 - DAFS - indicates a data response.
+2. On an error, such as this, a sub-transaction block will be present - SERRS - and indicate the error.
+3. This error indicates we tried to reference a field in our request that does not exist: BAD.FIELD

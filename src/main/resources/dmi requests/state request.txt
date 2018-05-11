@@ -1,0 +1,23 @@
+DMI
+1.4
+GSTRQ
+dev0_rt
+UT
+(token)
+
+979697290ý842296154
+18394
+57420
+CoreWSý2.0
+
+
+
+
+
+----- (this line is not part of the transaction. raw transaction below.) -----
+DMIþ1.4þGSTRQþdev0_rtþUTþ(token)þþ979697290ý842296154þ18394þ57420þCoreWSý2.0þþþþþ
+-----
+Notes:
+1. This request is currently used as a "keep alive"
+2. Note that it does not require a hash code, so it won't verify that the shared secret works, just
+   that the token is still valid and connectivity is possible.
