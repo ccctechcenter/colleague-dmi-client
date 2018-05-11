@@ -199,7 +199,7 @@ public class DmiTransaction {
         this.controlId = new String[] { r, r };
         if (controlId != null) this.controlId[0] = controlId;
 
-        this.createdBy = "CoreWSý2.0";
+        this.createdBy = "CoreWS" + Character.toString(VM) + "2.0";
         this.createdDate = LocalDate.now();
         this.createdTime = LocalTime.now();
     }
