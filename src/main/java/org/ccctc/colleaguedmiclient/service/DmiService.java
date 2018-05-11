@@ -13,6 +13,7 @@ import org.ccctc.colleaguedmiclient.transaction.DmiSubTransaction;
 import org.ccctc.colleaguedmiclient.transaction.DmiTransaction;
 import org.ccctc.colleaguedmiclient.socket.PoolingSocketFactory;
 import org.ccctc.colleaguedmiclient.transaction.LoginRequest;
+import org.ccctc.colleaguedmiclient.transaction.SessionStateRequest;
 import org.ccctc.colleaguedmiclient.util.StringUtils;
 
 import java.io.Closeable;
@@ -21,6 +22,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 
 /**
  * Service to handle communication with the DMI. Makes use of a {@code PoolingSocketFactory} to pool connections.
@@ -122,7 +124,7 @@ public class DmiService implements Closeable {
      */
     public SessionCredentials getSessionCredentials() throws DmiServiceException {
         if (!isActive())
-            login(false);
+            return login(false);
 
         return sessionCredentials;
     }
@@ -139,15 +141,27 @@ public class DmiService implements Closeable {
     }
 
     /**
-     * Perform a keep alive against the DMI.
+     * Perform a keep alive against the DMI, ensuring the credentials are still active.  This attempts a "get session
+     * state request" which should validate the credentials and be a low impact transaction.
+     * <p>
+     * This method may be scheduled (using your favorite scheduler) to fire every so often to keep a persistent connection
+     * the DMI going by keeping the token active and re-connecting as necessary.
      *
      * @throws DmiServiceException if the keep alive attempt fails
      */
-    private void keepAlive() throws DmiServiceException{
-        if (!isActive())
-            login(false);
+    public void keepAlive() throws DmiServiceException {
+        SessionCredentials creds = login(false);
+        DmiTransaction transaction = new SessionStateRequest(account, creds.getToken(), creds.getControlId());
+        DmiTransaction response = send(transaction);
 
-        // @TODO
+        if (log.isDebugEnabled()) {
+            String state = response.getSubTransactions().size() > 0 ?
+                    StringUtils.join(',',
+                            Arrays.asList(response.getSubTransactions().get(0).getCommands()))
+                    : "unknown";
+
+            log.debug("Keep Alive success. Session State = " + state);
+        }
     }
 
     /**
@@ -156,12 +170,12 @@ public class DmiService implements Closeable {
      * @param force Force a new login request
      * @throws DmiServiceException if the login cannot request cannot be performed or if it fails
      */
-    public void login(boolean force) throws DmiServiceException{
-        if (isActive() && !force) return;
+    public SessionCredentials login(boolean force) throws DmiServiceException{
+        if (isActive() && !force) return sessionCredentials;
 
         synchronized (loginLock) {
             // do this check a second time in case a login was completed while waiting for the login lock
-            if (isActive() && !force) return;
+            if (isActive() && !force) return sessionCredentials;
 
             LoginRequest loginRequest = new LoginRequest(account, username, password);
 
@@ -199,6 +213,8 @@ public class DmiService implements Closeable {
 
                 throw new DmiServiceException("Login request failed and no credentials or error message returned");
             }
+
+            return sessionCredentials;
         }
     }
 
@@ -260,11 +276,11 @@ public class DmiService implements Closeable {
             // credentials error - retry login
             if (logBackIn) {
                 log.info("Invalid/expired credentials, attempting to log back in");
-                login(true);
+                SessionCredentials creds = login(true);
 
                 // replace credentials and try again (if the request requires credentials, which we can test by presence of a token)
                 if (transaction.getToken() != null && transaction.getToken().length > 0) {
-                    transaction.setCredentials(sessionCredentials.getToken(), sessionCredentials.getControlId(), sharedSecret);
+                    transaction.setCredentials(creds.getToken(), creds.getControlId(), sharedSecret);
                 }
             } else {
 

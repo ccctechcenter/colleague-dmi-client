@@ -13,6 +13,8 @@
         <groovy.version>2.4.15</groovy.version>
         <lombok.version>1.16.20</lombok.version>
         <lombok.encoding>UTF-8</lombok.encoding>
+        <!-- enable trace logging, so we get the full detail on unit tests -->
+        <argLine>-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.SimpleLog -Dorg.apache.commons.logging.simplelog.defaultlog=trace</argLine>
     </properties>
 
     <build>
@@ -41,8 +43,6 @@
                 <configuration>
                     <useUnlimitedThreads>true</useUnlimitedThreads>
                     <parallel>classes</parallel>
-                    <!-- turn on SimpleLog and "trace" level logging -->
-                    <argLine>@{argLine} -Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.SimpleLog -Dorg.apache.commons.logging.simplelog.defaultlog=trace</argLine>
                     <useFile>false</useFile>
                     <includes>
                         <include>**/*Spec.*</include>
