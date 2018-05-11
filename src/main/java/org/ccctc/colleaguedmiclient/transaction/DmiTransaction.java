@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.ccctc.colleaguedmiclient.exception.DmiTransactionException;
 import org.ccctc.colleaguedmiclient.model.ByteSplitRemainder;
 import org.ccctc.colleaguedmiclient.util.ByteUtils;
@@ -22,13 +24,12 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.ccctc.colleaguedmiclient.util.ByteUtils.byteArrayToString;
-import static org.ccctc.colleaguedmiclient.util.ByteUtils.byteArrayToStringArray;
 import static org.ccctc.colleaguedmiclient.util.StringUtils.*;
 
-@Getter
-@Setter
-@ToString(exclude = "rawResponse")
+@ToString(exclude = {"log", "rawResponse"})
 public class DmiTransaction {
+
+    private final Log log = LogFactory.getLog(DmiTransaction.class);
 
     private final static String SCLMQ = "SCLMQ";
     private final static String SDHSQ = "SDHSQ";
@@ -39,21 +40,21 @@ public class DmiTransaction {
      *
      * Literal String "DMI"
      */
-    private String dmi;
+    @Getter @Setter private String dmi;
 
     /**
      * Line 2 of a DMI transaction
      *
      * Version - "1.4" in this implementation
      */
-    private String version;
+    @Getter @Setter private String version;
 
     /**
      * Line 3 of a DMI transaction
      *
      * Transaction type
      */
-    private String transactionType;
+    @Getter @Setter private String transactionType;
 
     /**
      * Line 4 of a DMI transaction
@@ -61,14 +62,14 @@ public class DmiTransaction {
      * Account information. The first element is the Colleague Environment / account (for example, production_rt).
      * The second element is the DASH connect string.
      */
-    private String[] account;
+    @Getter @Setter private String[] account;
 
     /**
      * Line 5 of a DMI transaction
      *
      * Application for this request, such as UT, CORE, ST, etc.
      */
-    private String application;
+    @Getter @Setter private String application;
 
     /**
      * Line 6 of a DMI transaction
@@ -76,14 +77,14 @@ public class DmiTransaction {
      * Token information returned by a login request or passed for a DMI request that need authorization. The combination
      * of token and the first value of ControlID authenticates a request.
      */
-    private String[] token;
+    @Getter @Setter private String[] token;
 
     /**
      * Line 7 of a DMI transaction
      *
      * Listener ID
      */
-    private String listenerId;
+    @Getter @Setter private String listenerId;
 
     /**
      * Line 8 of a DMI transaction
@@ -91,83 +92,84 @@ public class DmiTransaction {
      * Control ID information. The first element is the Control ID (used to authenticate the request). The second
      * element is a unique value for the request (this application generates a random number).
      */
-    private String[] controlId;
+    @Getter @Setter private String[] controlId;
 
     /**
      * Line 9 of a DMI transaction
      *
      * Date request was created
      */
-    private LocalDate createdDate;
+    @Getter @Setter private LocalDate createdDate;
 
     /**
      * Line 10 of a DMI transaction
      *
      * Time request was created
      */
-    private LocalTime createdTime;
+    @Getter @Setter private LocalTime createdTime;
 
     /**
      * Line 11 of a DMI transaction
      *
      * Whom request was created by - HOST for the DMI or "CoreWSý2.0" for this service
      */
-    private String createdBy;
+    @Getter @Setter private String createdBy;
 
     /**
      * Line 12 of a DMI transaction
      *
      * What transaction the request is in response to
      */
-    private String inResponseTo;
+    @Getter @Setter private String inResponseTo;
 
     /**
      * Line 13 of a DMI transaction
      *
      * Debug level
      */
-    private String debugLevel;
+    @Getter @Setter private String debugLevel;
 
     /**
      * Line 14 of a DMI transaction
      *
      * Last processed by
      */
-    private String lastProcessedBy;
+    @Getter @Setter private String lastProcessedBy;
 
     /**
      * Line 15 of a DMI transaction
      *
      * Last processed date
      */
-    private LocalDate lastProcessedDate;
+    @Getter @Setter private LocalDate lastProcessedDate;
 
     /**
      * Line 16 of a DMI transaction
      *
      * Last processed time
      */
-    private LocalTime lastProcessedTime;
+    @Getter @Setter private LocalTime lastProcessedTime;
 
     /**
      * Variable length sub transactions after line 16 of the DMI transaction
      */
-    private List<DmiSubTransaction> subTransactions;
+    @Getter private List<DmiSubTransaction> subTransactions;
 
     /**
      * Has a hash been added to this request? If so subrequests are closed.
      */
-    private boolean hashAdded = false;
+    @Getter private boolean hashAdded = false;
 
     /**
-     * Raw DMI response - chunks of bytes returned from the DMI
+     * DMI response, split at the @FM delimiter, so that each item in the list
+     * is a line of the response.
      */
-    private List<byte[]> rawResponse;
+    @Getter private List<String> rawResponse;
 
     /**
      * Set on a fromResponse or toDmiBytes (used in logging)
      */
-    private long transactionBytes = -1;
+    @Getter private long transactionBytes = -1;
 
 
     private DmiTransaction() {
@@ -221,8 +223,8 @@ public class DmiTransaction {
      * Append a delimiter followed by a string value to the string builder
      *
      * @param stringBuilder String builder
-     * @param value Value
-     * @param delimiter Delimeter
+     * @param value         Value
+     * @param delimiter     Delimiter
      */
     private void append(StringBuilder stringBuilder, String value, char delimiter) {
         stringBuilder.append(delimiter);
@@ -233,9 +235,9 @@ public class DmiTransaction {
      * Append a delimiter followed by each value of a string array delimiteed by a sub delimiter
      *
      * @param StringBuilder String builder
-     * @param value Value
-     * @param delimiter Delimiter
-     * @param subDelimiter Sub delimiter
+     * @param value         Value
+     * @param delimiter     Delimiter
+     * @param subDelimiter  Sub delimiter
      */
     private void append(StringBuilder StringBuilder, String[] value, char delimiter, char subDelimiter) {
         String val = null;
@@ -250,39 +252,6 @@ public class DmiTransaction {
         }
 
         append(StringBuilder, val, delimiter);
-    }
-
-    public String debugInfo() {
-        StringBuilder b = new StringBuilder();
-
-        if (this.account != null && this.account.length > 0) {
-            b.append(this.account[0]);
-            b.append(" ");
-        }
-
-        b.append(this.transactionType);
-        b.append(" ");
-        if (this.inResponseTo != null) {
-            b.append(" responding to: ");
-            b.append(this.inResponseTo);
-            b.append(" ");
-        }
-
-        if (this.subTransactions.size() > 0) {
-            b.append(" - ");
-
-            for (DmiSubTransaction s : this.subTransactions) {
-                b.append(s.getTransactionType());
-                b.append(" ");
-            }
-        }
-
-        b.append(" ... ");
-
-        if (this.transactionBytes > 0)
-            b.append("Size: " + transactionBytes);
-
-        return b.toString();
     }
 
     /**
@@ -343,7 +312,7 @@ public class DmiTransaction {
     /**
      * Convert this DMI transaction to a byte array, including the appropriate header and footer
      * indicating the beginning, size and end of the DMI transaction.
-     *
+     * <p>
      * The DMI transaction is encoded in windows-1252 format
      *
      * @return Byte array
@@ -411,14 +380,13 @@ public class DmiTransaction {
         try {
             String size = "";
             boolean inHeader = false;
-            while(true) {
+            while (true) {
                 headerBytes++;
                 byte bite = is.readByte();
                 if (bite == '#') {
                     if (inHeader) break;
                     inHeader = true;
-                }
-                else size += Character.toString((char)bite);
+                } else size += Character.toString((char) bite);
             }
 
             if (size.length() == 0)
@@ -426,7 +394,7 @@ public class DmiTransaction {
 
             try {
                 responseSize = Long.valueOf(size);
-            } catch (NumberFormatException e ) {
+            } catch (NumberFormatException e) {
                 throw new DmiTransactionException("Invalid header size (non-numeric)");
             }
         } catch (IOException e) {
@@ -438,7 +406,8 @@ public class DmiTransaction {
         //
         // read the rest of the response in chunks
         //
-        List<byte[]> results = new ArrayList<>();
+
+        List<String> results = new ArrayList<>();
         long totalRead = 0L;
         byte[] data = new byte[CHUNK_SIZE];
         byte[] remainder = null;
@@ -461,19 +430,19 @@ public class DmiTransaction {
                     byte[] first = split.get(0);
 
                     if (remainder == null || remainder.length == 0) {
-                        results.add(first);
+                        results.add(byteArrayToString(first));
                     } else {
                         // combine remainder in to first result
                         byte[] combined = new byte[remainder.length + first.length];
                         System.arraycopy(remainder, 0, combined, 0, remainder.length);
                         System.arraycopy(first, 0, combined, remainder.length, first.length);
-                        results.add(combined);
+                        results.add(byteArrayToString(combined));
 
                         remainder = null;
                     }
 
                     for (int x = 1; x < split.size(); x++) {
-                        results.add(split.get(x));
+                        results.add(byteArrayToString(split.get(x)));
                     }
                 }
 
@@ -503,10 +472,12 @@ public class DmiTransaction {
                                 && remainder[x + 3] == (byte) 'D'
                                 && remainder[x + 4] == (byte) '#') {
 
-                            if (remainder.length > 5)
-                                results.add(Arrays.copyOfRange(remainder, 0, remainder.length - 5));
-                            else
-                                results.add(new byte[0]);
+                            if (remainder.length > 5) {
+                                byte[] l = Arrays.copyOfRange(remainder, 0, remainder.length - 5);
+                                results.add(byteArrayToString(l));
+                            } else {
+                                results.add(null);
+                            }
 
                             break;
                         }
@@ -528,88 +499,87 @@ public class DmiTransaction {
      *
      * @param data DMI transaction data
      */
-    private void readResponse(List<byte[]> data) {
-        try {
-            this.setRawResponse(data);
+    private void readResponse(List<String> data) {
 
-            if (data.size() < 16) {
-                // add empty elements to get us up to 16
-                for (int x = data.size(); x < 16; x++) {
-                    data.add(new byte[0]);
+        // add null elements to get us up to 16
+        if (data.size() < 16) {
+            for (int x = data.size(); x < 16; x++) {
+                data.add(null);
+            }
+        }
+
+        this.rawResponse = data;
+
+        // strings
+        this.dmi = data.get(0);
+        this.version = data.get(1);
+        this.transactionType = data.get(2);
+        this.application = data.get(4);
+        this.listenerId = data.get(6);
+        this.createdBy = data.get(10);
+        this.inResponseTo = data.get(11);
+        this.debugLevel = data.get(12);
+        this.lastProcessedBy = data.get(13);
+
+        // arrays
+        this.account = (data.get(3) != null) ? split(data.get(3), VM) : null;
+        this.token = (data.get(5) != null) ? split(data.get(5), VM) : null;
+        this.controlId = (data.get(7) != null) ? split(data.get(7), VM) : null;
+
+        // date / times
+        this.createdDate = dateFromString(data.get(8));
+        this.createdTime = timeFromString(data.get(9));
+        this.lastProcessedDate = dateFromString(data.get(14));
+        this.lastProcessedTime = timeFromString(data.get(15));
+
+        // add in sub commands
+        if (data.size() > 16)
+            this.subTransactions = new ArrayList<>();
+
+        for (int x = 16; x < data.size(); x++) {
+            String type = data.get(x);
+            String end = type + ".END";
+            boolean finishedBlock = false;
+            List<String> subCommands = new ArrayList<>();
+            for (x++; x < data.size(); x++) {
+                String val = data.get(x);
+                if (val != null && val.equals(end)) {
+                    finishedBlock = true;
+                    break;
                 }
+                subCommands.add(val);
             }
 
-            // strings
-            this.dmi = byteArrayToString(data.get(0));
-            this.version = byteArrayToString(data.get(1));
-            this.transactionType = byteArrayToString(data.get(2));
-            this.application = byteArrayToString(data.get(4));
-            this.listenerId = byteArrayToString(data.get(6));
-            this.createdBy = byteArrayToString(data.get(10));
-            this.inResponseTo = byteArrayToString(data.get(11));
-            this.debugLevel = byteArrayToString(data.get(12));
-            this.lastProcessedBy = byteArrayToString(data.get(13));
+            if (!finishedBlock)
+                log.trace("Incomplete block: of type " + type);
 
-            // arrays
-            this.account = byteArrayToStringArray(data.get(3), VM);
-            this.token = byteArrayToStringArray(data.get(5), VM);
-            this.controlId = byteArrayToStringArray(data.get(7), VM);
+            // check size
+            if (subCommands.size() < 2)
+                throw new DmiTransactionException("sub transaction of incorrect size");
 
-            // date / times
-            this.createdDate = dateFromString(byteArrayToString(data.get(8)));
-            this.createdTime = timeFromString(byteArrayToString(data.get(9)));
-            this.lastProcessedDate = dateFromString(byteArrayToString(data.get(14)));
-            this.lastProcessedTime = timeFromString(byteArrayToString(data.get(15)));
+            int sizeCheck;
+            try {
+                sizeCheck = Integer.valueOf(subCommands.get(0));
 
-            // add in sub commands
-            if (data.size() > 16)
-                this.subTransactions = new ArrayList<>();
+                if (sizeCheck != subCommands.size() + 2)
+                    throw new DmiTransactionException("sub transaction size does not match content");
 
-            for (int x = 16; x < data.size(); x++) {
-                String type = byteArrayToString(data.get(x));
-                String end = type + ".END";
-                boolean finishedBlock = false;
-                List<String> subCommands = new ArrayList<>();
-                for (x++; x < data.size(); x++) {
-                    String val = byteArrayToString(data.get(x));
-                    if (val != null && val.equals(end)) {
-                        finishedBlock = true;
-                        break;
-                    }
-                    subCommands.add(val);
-                }
-
-                if (!finishedBlock)
-                    throw new DmiTransactionException("block not complete");
-
-                // check size
-                if (subCommands.size() < 2) throw new DmiTransactionException("sub transaction of incorrect size");
-                int sizeCheck;
-                try {
-                    sizeCheck = Integer.valueOf(subCommands.get(0));
-
-                    if (sizeCheck != subCommands.size() + 2)
-                        throw new DmiTransactionException("sub transaction size does not match content");
-
-                } catch (NumberFormatException e) {
-                    throw new DmiTransactionException("sub transaction of size value non numeric");
-                }
-
-                int mioLevel = 0;
-                // set mio level, ignore errors (it defaults to zero)
-                try {
-                    mioLevel = Integer.valueOf(subCommands.get(1));
-                } catch (NumberFormatException ignored) {
-                }
-
-                String[] commands = new String[subCommands.size() - 2];
-                for (int y = 2; y < subCommands.size(); y++)
-                    commands[y - 2] = subCommands.get(y);
-
-                this.subTransactions.add(new DmiSubTransaction(type, mioLevel, commands));
+            } catch (NumberFormatException e) {
+                throw new DmiTransactionException("sub transaction of size value non numeric");
             }
-        } catch (UnsupportedEncodingException e) {
-            throw new DmiTransactionException("Encoding error - " + e.getClass().getName() + ": " + e.getMessage());
+
+            int mioLevel = 0;
+            // set mio level, ignore errors (it defaults to zero)
+            try {
+                mioLevel = Integer.valueOf(subCommands.get(1));
+            } catch (NumberFormatException ignored) {
+            }
+
+            String[] commands = new String[subCommands.size() - 2];
+            for (int y = 2; y < subCommands.size(); y++)
+                commands[y - 2] = subCommands.get(y);
+
+            this.subTransactions.add(new DmiSubTransaction(type, mioLevel, commands));
         }
     }
 
@@ -621,17 +591,52 @@ public class DmiTransaction {
     }
 
     /**
-     * Add a hash subrequest to this DMI Transaction. No more sub transactions may be added after the hash sub request.
+     * Add or replace the hash subrequest in this DMI Transaction.
+     * <p>
+     * No more sub transactions may be added after the hash sub request.
      *
      * @param sharedSecret Shared Secret
      */
     protected void addHashSubRequest(String sharedSecret) {
         try {
+            // remove existing hash request (must be last request)
+            if (hashAdded && subTransactions.size() > 0) {
+                DmiSubTransaction last = subTransactions.get(subTransactions.size() - 1);
+                if (SDHSQ.equals(last.getTransactionType()))
+                    subTransactions.remove(last);
+
+                hashAdded = false;
+            }
+
+            // add new hash request
             String[] commands = new String[]{StringUtils.computeHash(this.toDmiString(), sharedSecret)};
             addSubTransaction(new DmiSubTransaction(SDHSQ, 0, commands));
             hashAdded = true;
         } catch (UnsupportedEncodingException | NoSuchAlgorithmException e) {
-            throw new DmiTransactionException("Unable to computed has value - " + e.getClass().getName() + ": " + e.getMessage());
+            throw new DmiTransactionException("Unable to computed hash value - " + e.getClass().getName() + ": " + e.getMessage());
         }
+    }
+
+
+    /**
+     * Set the Control ID and Token of this request and add/replace a hash subrequest w/ the shared secret
+     *
+     * @param token        Token
+     * @param controlId    Control ID
+     * @param sharedSecret Shared secret (if not specified, no hash subrequest will be added)
+     */
+    public void setCredentials(@NonNull String token, @NonNull String controlId, String sharedSecret) {
+        if (this.token == null || this.token.length == 0)
+            this.token = new String[] { token };
+        else
+            this.token[0] = token;
+
+        if (this.controlId == null || this.controlId.length == 0)
+            this.controlId = new String[] { controlId };
+        else
+            this.controlId[0] = controlId;
+
+        if (sharedSecret != null)
+            addHashSubRequest(sharedSecret);
     }
 }

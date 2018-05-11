@@ -1,17 +1,18 @@
 package org.ccctc.colleaguedmiclient.service;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.ccctc.colleaguedmiclient.exception.DmiServiceException;
-import org.ccctc.colleaguedmiclient.exception.DmiTransactionException;
 import org.ccctc.colleaguedmiclient.model.SessionCredentials;
 import org.ccctc.colleaguedmiclient.socket.PooledSocket;
 import org.ccctc.colleaguedmiclient.transaction.DmiSubTransaction;
 import org.ccctc.colleaguedmiclient.transaction.DmiTransaction;
 import org.ccctc.colleaguedmiclient.socket.PoolingSocketFactory;
 import org.ccctc.colleaguedmiclient.transaction.LoginRequest;
+import org.ccctc.colleaguedmiclient.util.StringUtils;
 
 import java.io.Closeable;
 import java.io.DataInputStream;
@@ -27,6 +28,9 @@ import java.time.temporal.ChronoUnit;
 public class DmiService implements Closeable {
 
     private final Log log = LogFactory.getLog(DmiService.class);
+
+    private final static String SERRS = "SERRS";
+
 
     /**
      * Colleague account (aka environment)
@@ -74,9 +78,10 @@ public class DmiService implements Closeable {
     @Getter @Setter private long authorizationExpirationSeconds = 4 * 60 * 60;
 
     /**
-     * Maximum retry sending / receiving a DMI Transaction. Default is 3.
+     * Maximum retries sending / receiving a DMI Transaction. Default is 1. This is in addition to the original
+     * attempt, ie a retry of 1 means it will be tried initially then retried once if there is an error.
      */
-    @Getter @Setter private int maxDmiTransactionRetry = 3;
+    @Getter @Setter private int maxDmiTransactionRetry = 1;
 
     /**
      * Pooling socket factory used by this service to send and receive data from the DMI.
@@ -119,13 +124,15 @@ public class DmiService implements Closeable {
     }
 
     /**
-     * Get session credentials from the last successful login request
+     * Get session credentials from the last successful login request. If there are no credentials or if the current
+     * credentials are expired, a new login attempt will be performed.
      *
      * @return Session credentials
+     * @throws DmiServiceException if a new login attempt fails
      */
-    public SessionCredentials getSessionCredentials() {
+    public SessionCredentials getSessionCredentials() throws DmiServiceException {
         if (!isActive())
-            login(true);
+            login(false);
 
         return sessionCredentials;
     }
@@ -142,36 +149,46 @@ public class DmiService implements Closeable {
     }
 
     /**
-     * Perform a keep alive against the DMI
+     * Perform a keep alive against the DMI.
+     *
+     * @throws DmiServiceException if the keep alive attempt fails
      */
-    private void keepAlive() {
+    private void keepAlive() throws DmiServiceException{
         if (!isActive())
-            login(true);
+            login(false);
 
         // @TODO
     }
 
     /**
-     * Login to the DMI, but only if the connection is not already active or if force is set to true
+     * Login to the DMI, but only if the connection is not already active or if force is set to true.
      *
      * @param force Force a new login request
+     * @throws DmiServiceException if the login cannot request cannot be performed or if it fails
      */
-    public void login(boolean force) {
+    public void login(boolean force) throws DmiServiceException{
         if (isActive() && !force) return;
 
         synchronized (loginLock) {
+            // do this check a second time in case a login was completed while waiting for the login lock
+            if (isActive() && !force) return;
+
             LoginRequest loginRequest = new LoginRequest(account, username, password);
 
             log.info("Sending login request to Colleague DMI");
 
-            DmiTransaction result = send(loginRequest);
+            DmiTransaction result;
+            try {
+                result = doSend(loginRequest, true);
+            } catch (Exception e) {
+                throw new DmiServiceException("Login request failed", e);
+            }
 
             //
             // a successful login request should result in a token and control ID
             //
 
-            if (result != null
-                    && result.getToken() != null
+            if (result.getToken() != null
                     && result.getControlId() != null
                     && result.getToken().length > 0
                     && result.getControlId().length > 0) {
@@ -181,94 +198,153 @@ public class DmiService implements Closeable {
                 log.info("Received credentials from DMI. Expiration: " + sessionCredentials.getExpirationDateTime().toString());
             } else {
                 sessionCredentials = null;
-                throw new DmiServiceException("Login request did not return a proper result");
+
+                // determine what went wrong - message should be in SERRS block
+                DmiSubTransaction errSub = null;
+                for (DmiSubTransaction sub : result.getSubTransactions()) {
+                    if (SERRS.equals(sub.getTransactionType())) {
+                        throw new DmiServiceException("Login request failed: " + String.join(",", sub.getCommands()));
+                    }
+                }
+
+                throw new DmiServiceException("Login request failed - no credentials or error message returned");
             }
         }
     }
 
     /**
-     * Send a transaction to the DMI and return the response
+     * Send a transaction to the DMI and return the response.
+     * <p>
+     * Error handling is done as part of the request and depending on the error a re-login
+     * or retry of the transaction may be performed to see if it can complete the request.
+     * If it cannot complete the request, it will throw a @{code DmiServiceException}.
      *
      * @param transaction DMI Transaction
      * @return Response
+     * @throws DmiServiceException if the request cannot be completed
      */
-    public DmiTransaction send(DmiTransaction transaction) {
-
-        for(int x = 1; ; x++) {
-            boolean fatal = false;
+    public DmiTransaction send(@NonNull DmiTransaction transaction) throws DmiServiceException {
+        int attempt = 0;
+        while (true) {
             Exception ex = null;
-            PooledSocket socket = null;
-            DataOutputStream os = null;
-            DataInputStream is = null;
+            DmiTransaction response = null;
+            String errorMessage = null;
+            boolean logBackIn = false;
+            boolean fatal = false;
 
             try {
-                socket = socketFactory.getSocket();
-                os = new DataOutputStream(socket.getOutputStream());
-                is = new DataInputStream(socket.getInputStream());
-                byte[] bytes = transaction.toDmiBytes();
-
-                if (log.isTraceEnabled()) log.trace("DMI send: " + transaction.debugInfo());
-
-                os.write(bytes);
-                DmiTransaction response =  DmiTransaction.fromResponse(is);
-
-                if (log.isTraceEnabled()) log.trace("DMI recv: " + transaction.debugInfo());
+                boolean forceNewSocket = (attempt > 0);
+                response = doSend(transaction, forceNewSocket);
 
                 // check to see if the response is an error
-                DmiSubTransaction sub1 = (response.getSubTransactions().size() > 0)
-                        ? response.getSubTransactions().get(0) : null;
-
-                if (sub1 != null && sub1.getTransactionType().equals("SERRS")) {
-                    String err = String.join(", ", sub1.getCommands());
-                    throw new DmiTransactionException(err, response);
+                DmiSubTransaction errSub = null;
+                for (DmiSubTransaction sub : response.getSubTransactions()) {
+                    if (SERRS.equals(sub.getTransactionType())) {
+                        errSub = sub;
+                        break;
+                    }
                 }
 
-                return response;
+                // on error, determine whether we need new login credentials, whether this is a known "fatal" error,
+                // or whether we should retry the transaction, hoping for a better result!
+                if (errSub != null) {
+                    String errType = (errSub.getCommands().length) > 0 ? errSub.getCommands()[0] : null;
+
+                    if ("SECURITY".equals(errType)) logBackIn = true;
+                    if ("SET".equals(errType)) fatal = true;
+
+                    errorMessage = String.join(", ", errSub.getCommands());
+                } else {
+                    return response;
+                }
             } catch (Exception e) {
-
-                // @TODO - determine what might constitute a "fatal" error - for example username/password error
-
-                // @TODO - determine when an error means our credentials have expired and we need to log back in
-
                 ex = e;
-            } finally {
+            }
+
+            // fatal or max retry exceeded
+            if (fatal || ++attempt > maxDmiTransactionRetry) {
+                if (ex != null) throw new DmiServiceException("Error sending/receiving transaction to/from DMI", ex);
+                throw new DmiServiceException("DMI Transaction resulted in an error: " + errorMessage);
+            }
+
+            // credentials error - retry login
+            if (logBackIn) {
+                log.info("Invalid/expired credentials, attempting to log back in");
+                login(true);
+
+                // replace credentials and try again (if the request requires credentials, which we can test by presence of a token)
+                if (transaction.getToken() != null && transaction.getToken().length > 0) {
+                    transaction.setCredentials(sessionCredentials.getToken(), sessionCredentials.getControlId(), sharedSecret);
+                }
+            } else {
+
+                // sleep 250 ms before attempting a retry
                 try {
-                    if (socket != null) {
-                        // recycle the socket on exception
-                        if (ex != null) socket.recycle();
-                        else socket.close();
-                    }
-                } catch (IOException ignored) { }
+                    Thread.sleep(250);
+                } catch (InterruptedException ignored) { }
 
-                try { if (os != null) os.close(); } catch (IOException ignored) { }
-                try { if (is != null) is.close(); } catch (IOException ignored) { }
+                // on retry leave a message in the logger, but continue
+                log.error("DMI Transaction Error, attempting to retry: "
+                        + (ex != null ? ex.getClass().getSimpleName() + " - " + ex.getMessage() : errorMessage));
+
             }
-
-            // sleep 250 ms before attempting again
-            try {
-                Thread.sleep(250);
-            } catch (InterruptedException i) {
-                throw new DmiServiceException("DMI Service Error (interrupted) - " + ex.getClass().getName() + ": " + ex.getMessage());
-            }
-
-            if (fatal)
-                throw new DmiServiceException("DMI Service Error (fatal error) - " + ex.getClass().getName() + ": " + ex.getMessage());
-
-            if (x >= maxDmiTransactionRetry)
-                throw new DmiServiceException("DMI Service Error (max retry exceeded) - " + ex.getClass().getName() + ": " + ex.getMessage());
-
-            // on retry leave a message in the logger, but continue
-            log.error("DMI Service error (will retry) - " + ex.getClass().getName() + ": " + ex.getMessage());
         }
     }
 
     /**
-     * Close the connection pool associated with the DMI Service
+     * Send data to the DMI and return the result
      *
-     * @throws IOException if closing the connection pool causes an error
+     * @param transaction    DMI Transaction to send
+     * @param forceNewSocket Force new socket for transaction?
+     * @return DMI Transaction response
+     */
+    private DmiTransaction doSend(DmiTransaction transaction, boolean forceNewSocket) {
+        Exception ex = null;
+        PooledSocket socket = null;
+        DataOutputStream os = null;
+        DataInputStream is = null;
+        DmiTransaction response;
+
+        try {
+            socket = socketFactory.getSocket(forceNewSocket);
+            os = new DataOutputStream(socket.getOutputStream());
+            is = new DataInputStream(socket.getInputStream());
+            byte[] bytes = transaction.toDmiBytes();
+
+            if (log.isTraceEnabled())
+                log.trace("DMI send: " + transaction.toDmiString());
+
+            os.write(bytes);
+            response =  DmiTransaction.fromResponse(is);
+
+            if (log.isTraceEnabled() && response.getRawResponse() != null)
+                log.trace("DMI recv: " + String.join(Character.toString(StringUtils.FM), response.getRawResponse()));
+
+        } catch (Exception e) {
+            ex = e;
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                if (socket != null) {
+                    // recycle the socket on exception
+                    if (ex != null) socket.recycle();
+                    else socket.close();
+                }
+            } catch (IOException ignored) { }
+
+            try { if (os != null) os.close(); } catch (IOException ignored) { }
+            try { if (is != null) is.close(); } catch (IOException ignored) { }
+        }
+
+        return response;
+    }
+
+    /**
+     * Empty the connection pool associated with the DMI Service. Any open sockets will be closed and recycled,
+     * ensuring no connections remain open.
      */
     @Override
-    public void close() throws IOException {
+    public void close() {
         this.socketFactory.close();
     }
 }

@@ -1,6 +1,7 @@
 package org.ccctc.colleaguedmiclient.service;
 
 import lombok.NonNull;
+import org.apache.commons.collections4.IteratorUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.ccctc.colleaguedmiclient.exception.DmiTransactionException;
@@ -11,16 +12,15 @@ import org.ccctc.colleaguedmiclient.model.SessionCredentials;
 import org.ccctc.colleaguedmiclient.transaction.data.SelectRequest;
 import org.ccctc.colleaguedmiclient.transaction.data.SelectResponse;
 import org.ccctc.colleaguedmiclient.transaction.data.SingleKeyRequest;
-import org.ccctc.colleaguedmiclient.util.StringUtils;
+import org.ccctc.colleaguedmiclient.transaction.data.ViewType;
+import org.ccctc.colleaguedmiclient.util.CddUtils;
 import org.ccctc.colleaguedmiclient.transaction.DmiTransaction;
 import org.ccctc.colleaguedmiclient.transaction.data.BatchKeysRequest;
-import org.ccctc.colleaguedmiclient.transaction.data.DataRequest;
 import org.ccctc.colleaguedmiclient.transaction.data.DataResponse;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,7 +71,7 @@ public class DmiDataService {
      */
     public ColleagueData singleKey(@NonNull String appl, @NonNull String viewName, @NonNull Iterable<String> columns,
                                    @NonNull String key) {
-        return singleKey(appl, viewName, DataRequest.ViewType.PHYS, columns, key);
+        return singleKey(appl, viewName, ViewType.PHYS, columns, key);
     }
 
 
@@ -85,18 +85,18 @@ public class DmiDataService {
      * @param key      Primary key
      * @return Record
      */
-    public ColleagueData singleKey(@NonNull String appl, @NonNull String viewName, @NonNull DataRequest.ViewType viewType,
+    public ColleagueData singleKey(@NonNull String appl, @NonNull String viewName, @NonNull ViewType viewType,
                                    @NonNull Iterable<String> columns, @NonNull String key) {
         SessionCredentials creds = dmiService.getSessionCredentials();
         SingleKeyRequest request = new SingleKeyRequest(dmiService.getAccount(), creds.getToken(), creds.getControlId(),
                 dmiService.getSharedSecret(), viewName, viewType, columns, key);
 
-        logSend("singleKey", request, viewName, columns, new String[] { key }, null);
+        logSend("singleKey", request, viewName, columns, Collections.singleton(key), null);
 
-        DmiTransaction dmiReponse = dmiService.send(request);
-        List<ColleagueData> data = processResponse(dmiReponse, appl, viewName, columns);
+        DmiTransaction dmiResponse = dmiService.send(request);
+        List<ColleagueData> data = processResponse(dmiResponse, appl, viewName, columns);
 
-        logReceive("singleKey", dmiReponse, viewName, data.size());
+        logReceive("singleKey", dmiResponse, viewName, data.size());
 
         if (data.size() > 0) return data.get(0);
 
@@ -115,8 +115,8 @@ public class DmiDataService {
      * @return List of records
      */
     public List<ColleagueData> batchKeys(@NonNull String appl, @NonNull String viewName, @NonNull Iterable<String> columns,
-                                         @NonNull String[] keys) {
-        return batchKeys(appl, viewName, DataRequest.ViewType.PHYS, columns, keys);
+                                         @NonNull Iterable<String> keys) {
+        return batchKeys(appl, viewName, ViewType.PHYS, columns, keys);
     }
 
 
@@ -132,15 +132,17 @@ public class DmiDataService {
      * @param keys     Primary keys
      * @return List of records
      */
-    public List<ColleagueData> batchKeys(@NonNull String appl, @NonNull String viewName, @NonNull DataRequest.ViewType viewType,
-                                         @NonNull Iterable<String> columns, @NonNull String[] keys) {
+    public List<ColleagueData> batchKeys(@NonNull String appl, @NonNull String viewName, @NonNull ViewType viewType,
+                                         @NonNull Iterable<String> columns, @NonNull Iterable<String> keys) {
 
-        if (keys.length == 0)
+        List<String> keysList = (keys instanceof List) ? (List) keys : IteratorUtils.toList(keys.iterator());
+
+        if (keysList.size() == 0)
             return new ArrayList<>();
 
         SessionCredentials creds = dmiService.getSessionCredentials();
 
-        if (keys.length < batchSize) {
+        if (keysList.size() < batchSize) {
             BatchKeysRequest request = new BatchKeysRequest(dmiService.getAccount(), creds.getToken(), creds.getControlId(),
                     dmiService.getSharedSecret(), viewName, viewType, columns, keys);
 
@@ -156,16 +158,16 @@ public class DmiDataService {
             List<ColleagueData> result = new ArrayList<>();
 
             // process in batches
-            for (int x = 0; x < keys.length; x += batchSize) {
+            for (int x = 0; x < keysList.size(); x += batchSize) {
                 int to = x + batchSize;
-                if (to > keys.length) to = keys.length;
+                if (to > keysList.size()) to = keysList.size();
 
-                String[] k = Arrays.copyOfRange(keys, x, to);
+                List<String> keysSubList = keysList.subList(x, to);
 
                 BatchKeysRequest request = new BatchKeysRequest(dmiService.getAccount(), creds.getToken(), creds.getControlId(),
-                        dmiService.getSharedSecret(), viewName, viewType, columns, k);
+                        dmiService.getSharedSecret(), viewName, viewType, columns, keysSubList);
 
-                logSend("batchKeys", request, viewName, columns, k, null);
+                logSend("batchKeys", request, viewName, columns, keysSubList, null);
 
                 DmiTransaction dmiReponse = dmiService.send(request);
 
@@ -198,7 +200,7 @@ public class DmiDataService {
      */
     public List<ColleagueData> batchSelect(@NonNull String appl, @NonNull String viewName,
                                            @NonNull Iterable<String> columns, String criteria) {
-        return batchSelect(appl, viewName, DataRequest.ViewType.PHYS, columns, criteria);
+        return batchSelect(appl, viewName, ViewType.PHYS, columns, criteria);
     }
 
 
@@ -218,12 +220,13 @@ public class DmiDataService {
      * @param criteria Selection criteria
      * @return List of records
      */
-    public List<ColleagueData> batchSelect(@NonNull String appl, @NonNull String viewName, @NonNull DataRequest.ViewType viewType,
+    public List<ColleagueData> batchSelect(@NonNull String appl, @NonNull String viewName, @NonNull ViewType viewType,
                                            @NonNull Iterable<String> columns, String criteria) {
 
         // get keys
         String[] keys = selectKeys(viewName, criteria);
-        return batchKeys(appl, viewName, viewType, columns, keys);
+        Iterable<String> keysIterable = () -> Arrays.stream(keys).iterator();
+        return batchKeys(appl, viewName, viewType, columns, keysIterable);
 
         ///
         /// Due to the capability of overwhelming the server with a large select request, this functionality has been removed
@@ -275,7 +278,7 @@ public class DmiDataService {
      * @param limitingKeys Limiting keys
      * @return List of keys
      */
-    public String[] selectKeys(@NonNull String viewName, String criteria, String[] limitingKeys) {
+    public String[] selectKeys(@NonNull String viewName, String criteria, Iterable<String> limitingKeys) {
         SessionCredentials creds = dmiService.getSessionCredentials();
         SelectRequest request = new SelectRequest(dmiService.getAccount(), creds.getToken(), creds.getControlId(),
                 dmiService.getSharedSecret(), viewName, criteria, limitingKeys);
@@ -303,27 +306,33 @@ public class DmiDataService {
      */
     private List<ColleagueData> processResponse(DmiTransaction dmiReponse, String appl, String viewName,
                                                 Iterable<String> columns) {
-        DataResponse dataResponse = DataResponse.fromDmiTransaction(dmiReponse);
-
-        EntityMetadata entityMetadata = entityMetadataService.GetEntity(appl, viewName);
-
-        if (entityMetadata == null)
-            throw new DmiTransactionException("No entity information found for " + appl + "." + viewName);
-
         List<ColleagueData> result = new ArrayList<>();
 
-        // match field names
-        for (String key : dataResponse.getOrder()) {
-            String[] record = dataResponse.getData().get(key);
+        DataResponse dataResponse = DataResponse.fromDmiTransaction(dmiReponse);
 
-            Map<String, Object> values = new HashMap<>();
-            for (String column : columns) {
-                CddEntry cddEntry = entityMetadata.getEntries().get(column);
-                Object value = mapField(record, cddEntry);
-                values.put(column, value);
+        if (dataResponse.getOrder().size() > 0) {
+            EntityMetadata entityMetadata = entityMetadataService.getEntity(appl, viewName);
+
+            if (entityMetadata == null)
+                throw new DmiTransactionException("No entity information found for " + appl + "." + viewName);
+
+            // match field names
+            for (String key : dataResponse.getOrder()) {
+                String[] record = dataResponse.getData().get(key);
+
+                Map<String, Object> values = new HashMap<>();
+                for (String column : columns) {
+                    CddEntry cddEntry = entityMetadata.getEntries().get(column);
+
+                    if (cddEntry == null)
+                        throw new DmiTransactionException("Invalid field requested: " + column + " for " + appl + "." + viewName);
+
+                    Object value = mapField(record, cddEntry);
+                    values.put(column, value);
+                }
+
+                result.add(new ColleagueData(key, values));
             }
-
-            result.add(new ColleagueData(key, values));
         }
 
         return result;
@@ -335,110 +344,29 @@ public class DmiDataService {
      * <p>
      * The following data types are possible: String, Long, Integer, BigDecimal, LocalDate, LocalTime
      *
-     * @param record   Record from the DMI response. This is includes all fields from the response.
+     * @param record   Record from the DMI response. This includes all fields from the response.
      * @param cddEntry CDD Entry of the field we want to map
      * @return Mapped field
      */
     private Object mapField(String[] record, CddEntry cddEntry) {
         String stringValue = null;
 
-        if (cddEntry != null) {
-            Integer placement = cddEntry.getFieldPlacement();
-            if (placement != null && record.length >= placement) {
-                stringValue = record[placement - 1];
-                if ("".equals(stringValue)) stringValue = null;
-            }
+        // find value in record based on field placement from CDD entry
+        Integer placement = cddEntry.getFieldPlacement();
+        if (placement != null && record.length >= placement) {
+            stringValue = record[placement - 1];
+            if ("".equals(stringValue)) stringValue = null;
         }
 
-        if (stringValue != null) {
-            String type = cddEntry.getDatabaseUsageType();
-            String conversion = cddEntry.getInformConversionString();
-
-            Object value = null;
-
-            // split into an array, even if its only a single value in the array
-            // types L (list), A (association) and Q (multi-valued pointer) are array types
-            String[] strSplit;
-            boolean isArray = false;
-            if (type.equals("L") || type.equals("A") || type.equals("Q")) {
-                strSplit = StringUtils.split(stringValue, StringUtils.VM);
-                isArray = true;
-            } else {
-                strSplit = new String[]{stringValue};
-            }
-
-            // process the array of values
-            Object[] vals = new Object[strSplit.length];
-            for (int x = 0; x < strSplit.length; x++) {
-                String str = strSplit[x];
-
-                if (conversion == null) {
-                    value = str;
-                }
-                // date
-                else if (conversion.charAt(0) == 'D') {
-                    // date
-                    value = StringUtils.dateFromString(str);
-                }
-                // time
-                else if (conversion.length() >= 2 && conversion.substring(0, 2).equals("MT")) {
-                    value = StringUtils.timeFromString(str);
-                }
-                // decimal
-                else if (conversion.length() >= 2 && conversion.substring(0, 2).equals("MD")) {
-                    // in colleague, decimal values are stored without the decimal point, the scale is
-                    // specified in the data type as the 3rd or 4th character.
-                    // Examples:
-                    // MD25 = scale of 5
-                    // MD2 = scale of 2
-                    // MD0 = scale of 0 (integer or long value depending on "length")
-                    String scale = "0";
-                    if (conversion.length() > 3) scale = conversion.substring(3, 4);
-                    else if (conversion.length() == 3) scale = conversion.substring(2, 3);
-
-                    if (scale.equals("0")) {
-                        Integer maxStorage = cddEntry.getMaximumStorageSize();
-                        // long
-                        if (maxStorage != null && maxStorage > 9) {
-                            try {
-                                value = Long.valueOf(str);
-                            } catch (NumberFormatException ignored) {
-                            }
-                        }
-                        // int
-                        else {
-                            try {
-                                value = Integer.valueOf(str);
-                            } catch (NumberFormatException ignored) {
-                            }
-                        }
-                    } else {
-                        try {
-                            value = new BigDecimal(new BigInteger(str), Integer.parseInt(scale));
-                        } catch (NumberFormatException ignored) {
-                        }
-                    }
-                }
-                // string
-                else {
-                    value = str;
-                }
-
-                vals[x] = value;
-            }
-
-            // if this is not an array value, return the first value from the results
-            return (isArray) ? vals : vals[0];
-        }
+        if (stringValue != null)
+            return CddUtils.convertToValue(stringValue, cddEntry);
 
         return null;
     }
 
 
-    private void logSend(String type, DmiTransaction transaction, String table, Iterable<String> columns, String[] keys, String criteria) {
-        if (log.isTraceEnabled())
-            log.trace("Sending DMI Data Request: " + transaction.toDmiString());
-        else if (log.isInfoEnabled()) {
+    private void logSend(String type, DmiTransaction transaction, String table, Iterable<String> columns, Iterable<String> keys, String criteria) {
+        if (log.isInfoEnabled()) {
             String c = (columns != null ? String.join(",", columns) : "(none)");
             String k = (keys != null ? String.join(",", keys) : "(none)");
 
@@ -453,9 +381,7 @@ public class DmiDataService {
 
 
     private void logReceive(String type, DmiTransaction transaction, String table, int recordCount) {
-        if (log.isTraceEnabled())
-            log.trace("Received DMI Data Response: " + transaction.toDmiString());
-        else if (log.isInfoEnabled())
+        if (log.isInfoEnabled())
             log.info("Received DMI Data Response. Type = " + type + ", table = " + table
                     + ", records = " + recordCount);
     }

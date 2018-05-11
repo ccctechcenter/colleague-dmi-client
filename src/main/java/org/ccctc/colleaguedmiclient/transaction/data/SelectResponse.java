@@ -1,14 +1,29 @@
 package org.ccctc.colleaguedmiclient.transaction.data;
 
 import lombok.Getter;
+import lombok.NonNull;
+import lombok.ToString;
 import org.ccctc.colleaguedmiclient.exception.DmiTransactionException;
 import org.ccctc.colleaguedmiclient.transaction.DmiSubTransaction;
 import org.ccctc.colleaguedmiclient.transaction.DmiTransaction;
+import org.ccctc.colleaguedmiclient.util.StringUtils;
 
 import java.util.Arrays;
 
+import static org.ccctc.colleaguedmiclient.util.StringUtils.parseIntOrNull;
+
+/**
+ * Response from a DMI transaction that requested a key select. This should be instantiated by calling
+ * @{code fromDmiTransaction()} with the DMI response from a @{code SelectRequest}.
+ *
+ * @see org.ccctc.colleaguedmiclient.service.DmiDataService
+ * @see SelectRequest
+ */
 @Getter
+@ToString
 public class SelectResponse {
+
+    private final static String SDAFS = "SDAFS";
 
     /**
      * Table name
@@ -20,42 +35,55 @@ public class SelectResponse {
      */
     private final String[] keys;
 
-    public static SelectResponse fromDmiTransaction(DmiTransaction transaction) {
-        assert "DAFS".equals(transaction.getTransactionType());
-        assert "DAFQ".equals(transaction.getInResponseTo());
+    /**
+     * Create a select response from a DMI transaction.
+     *
+     * @param transaction DMI Transaction
+     * @return Select response
+     */
+    public static SelectResponse fromDmiTransaction(@NonNull DmiTransaction transaction) {
+        for (DmiSubTransaction sub : transaction.getSubTransactions()) {
+            if (SDAFS.equals(sub.getTransactionType()))
+                return new SelectResponse(sub);
+        }
 
-        if (transaction.getSubTransactions().size() == 0)
-            throw new DmiTransactionException("DMI Transaction passed to SelectResponse did not contain any sub transactions");
-
-        return new SelectResponse(transaction.getSubTransactions().get(0));
+        throw new DmiTransactionException("DMI Transaction does not contain a response to a select request");
     }
 
-    public SelectResponse(DmiSubTransaction subTransaction) {
-        assert "SDAFS".equals(subTransaction.getTransactionType());
+    /**
+     * Create a select response from a sub transaction of type SDAFS
+     *
+     * @param subTransaction Sub transaction
+     */
+    private SelectResponse(@NonNull DmiSubTransaction subTransaction) {
+        if (!SDAFS.equals(subTransaction.getTransactionType()))
+            throw new DmiTransactionException("Unexpected sub transaction type encountered: " + subTransaction.getTransactionType());
 
         String[] commands = subTransaction.getCommands();
 
-        assert commands.length >= 7;
-        assert "F".equals(commands[0]);
-        assert "STANDARD".equals(commands[1]);
-        assert ("SELECT".equals(commands[2]) || "SUBSELECT".equals(commands[2]));
-        assert "L".equals(commands[3]);
-        assert "SELECT".equals(commands[4]);
-        assert commands[5] != null;
+        if (commands.length < 7)
+            throw new DmiTransactionException("Malformed response: sub transaction not long enough");
 
         this.table = commands[5];
 
-        int sizeCheck;
-        try {
-            sizeCheck = Integer.valueOf(commands[6]);
-        } catch (NumberFormatException e) {
-            throw new DmiTransactionException("Missing record length");
-        }
+        if (table == null || table.equals(""))
+            throw new DmiTransactionException("Malformed response: no table/view specified");
 
-        if (commands.length != sizeCheck + 4)
-            throw new DmiTransactionException("Sub transaction size does not match size check");
+        assert "F".equals(commands[0]);
+        assert "STANDARD".equals(commands[1]);
+        assert ("SELECT".equals(commands[2]) || "SUBSELECT".equals(commands[2]));
+        assert "SELECT".equals(commands[4]);
 
-        assert (this.table + ".END").equals(commands[commands.length - 1]);
+        // verify transaction size
+        Integer subsetSize = parseIntOrNull(commands[6]);
+        if (subsetSize == null)
+            throw new DmiTransactionException("Malformed response: subset size is missing");
+        else if (subsetSize != commands.length - 4)
+            throw new DmiTransactionException("Malformed response: subset size does match response size");
+
+        // verify end of table block
+        if (!(table + ".END").equals(commands[subsetSize + 3]))
+            throw new DmiTransactionException("Malformed response: " + table + ".END not found where expected");
 
         this.keys = Arrays.copyOfRange(commands, 7, commands.length - 1);
     }

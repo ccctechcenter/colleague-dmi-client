@@ -37,8 +37,8 @@ class SocketSpec extends Specification {
         f.setPoolTimeoutMs(5)
 
         when:
-        f.getSocket()
-        f.getSocket()
+        f.getSocket(false)
+        f.getSocket(false)
 
         then:
         def i = thrown SocketException
@@ -54,7 +54,7 @@ class SocketSpec extends Specification {
         f.setSocketConnectTimeoutMs(5)
 
         when:
-        f.getSocket()
+        f.getSocket(false)
 
         then:
         def i = thrown SocketException
@@ -69,12 +69,12 @@ class SocketSpec extends Specification {
         def f = new PoolingSocketFactory("localhost", testPort, 1)
 
         when:
-        f.getSocket()
+        f.getSocket(false)
 
         Exception ex
 
         Thread th = new Thread({
-            try { f.getSocket() }
+            try { f.getSocket(false) }
             catch (SocketException e) { ex = e }
             } as Runnable)
         th.start()
@@ -97,9 +97,9 @@ class SocketSpec extends Specification {
         def f = new PoolingSocketFactory("localhost", testPort, 1)
 
         when:
-        def s = f.getSocket()
+        def s = f.getSocket(false)
         s.close()
-        def s2 = f.getSocket()
+        def s2 = f.getSocket(false)
 
         then:
         s == s2
@@ -113,9 +113,9 @@ class SocketSpec extends Specification {
         def f = new PoolingSocketFactory("localhost", testPort, 1)
 
         when:
-        def s = f.getSocket()
+        def s = f.getSocket(false)
         s.recycle()
-        def s2 = f.getSocket()
+        def s2 = f.getSocket(false)
 
         then:
         s != s2
@@ -132,10 +132,10 @@ class SocketSpec extends Specification {
         f.setSocketExpirationMs(100)
 
         when:
-        def s = f.getSocket()
+        def s = f.getSocket(false)
         f.close()
         Thread.sleep(1200)
-        def s2 = f.getSocket()
+        def s2 = f.getSocket(false)
 
         then:
         s != s2
@@ -154,7 +154,7 @@ class SocketSpec extends Specification {
         when:
         // open 5 connections
         GParsPool.withPool {
-            sockets = (0..4).collectParallel { return f.getSocket() }
+            sockets = (0..4).collectParallel { return f.getSocket(false) }
         }
 
         then:
@@ -164,7 +164,7 @@ class SocketSpec extends Specification {
         when:
         // open 5 more connections
         GParsPool.withPool {
-            sockets2 = (0..4).collectParallel { return f.getSocket() }
+            sockets2 = (0..4).collectParallel { return f.getSocket(false) }
         }
 
         then:
@@ -184,7 +184,7 @@ class SocketSpec extends Specification {
         when:
         // open 5 more connections
         GParsPool.withPool {
-            sockets3 = (0..4).collectParallel { return f.getSocket() }
+            sockets3 = (0..4).collectParallel { return f.getSocket(false) }
         }
 
         then:
@@ -221,8 +221,8 @@ class SocketSpec extends Specification {
     def "close factory - used and available sockets should be emptied"() {
         setup:
         def f = new PoolingSocketFactory("localhost", testPort, 10)
-        def s1 = f.getSocket()
-        def s2 = f.getSocket()
+        def s1 = f.getSocket(false)
+        def s2 = f.getSocket(false)
 
         s2.close()
 

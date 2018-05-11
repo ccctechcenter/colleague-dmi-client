@@ -74,7 +74,7 @@ __DmiService__
 
 1. `authorizationExpirationSeconds` - Authorization expiration. Defaults to 4 hours. When authorization expires, 
    the DMI Service will request new credentials via a login request.
-2. `maxDmiTransactionRetry` - Maximum retry sending / receiving a DMI Transaction. Default is 3.
+2. `maxDmiTransactionRetry` - Maximum attempts to sending / receiving a DMI Transaction. Default is 2.
 
 __EntityMetadataService__
 
@@ -258,7 +258,7 @@ common for all DMI transactions):
 8.  123456789ý1503944062  (control id - see below for description)
 9.  18385                 (date of DMI request in UniData format)
 10. 47426                 (time of DMI request in UniData format)
-11. CoreWSý2.0            (who request was created by)
+11. CoreWSý2.0            (who transaction was created by)
 12.                       (type of transaction this is in response to)
 13.                       (debug level)
 14.                       (last processed by)
@@ -311,41 +311,41 @@ The response to this transaction:
 Broken down:
 
 ```
-1.  DMI
-2.  1.4
-3.  DAFS
-4.  dev_rt
-5.  UT
-6.  123456789012345
-7.  
-8.  123456789ýj1
-9.  18385
-10. 48114
-11. HOST
-12. DAFQ        (type of transaction this is in response to)
-13. 
-14. 
-15. 18385
-16. 48114
-17. SDAFS
-18. 19
-19. 0
-20. F
-21. STANDARD
-22. SINGLEKEY
+1.  DMI             (always DMI)
+2.  1.4             (version - always 1.4)
+3.  DAFS            (type of transaction - DAFS is a data response)
+4.  dev_rt          (account / environment - this indicates the "dev" environment)
+5.  UT              (Colleague application - always UT for data requests)
+6.  123456789012345 (token)
+7.                  (listener id)
+8.  123456789ýj1    (control ID
+9.  18385           (date of DMI request in UniData format)
+10. 48114           (time of DMI request in UniData format)
+11. HOST            (who transaction was created by)
+12. DAFQ            (type of transaction this is in response to)
+13.                 (debug level)
+14.                 (last processed by)
+15. 18385           (last processed date in UniData format)
+16. 48114           (last processed time in UniData format)
+17. SDAFS           (type of sub-transaction - always begins with "S")
+18. 19              (number of lines of this sub-transaction)
+19. 0               (MIO level - usually 0)
+20. F               (submit flag - from request)
+21. STANDARD        (mode - from request)
+22. SINGLEKEY       (type - from rqeuest)
 23. 
-24. SINGLE      (indicates this is a single record)
-25. PERSON      (view returned)
-26. 3           (number of columns returned)
+24. SINGLE          (indicates this is a single record)
+25. PERSON          (view returned)
+26. 3               (number of columns returned)
 27. 
-28. 123456789   (primary key of the record)
+28. 123456789       (primary key of the record)
 29. 
-30. 
-31. Aykroyd     (data for LAST.NAME)
-32.             (data for SOURCE - blank as this field was not requested)
-33. Dan         (data for FIRST.NAME)
-34. PERSON.END 
-35. SDAFS.END
+30.                 (error code)
+31. Aykroyd         (data for LAST.NAME)
+32.                 (data for SOURCE - blank as this field was not requested)
+33. Dan             (data for FIRST.NAME)
+34. PERSON.END      (end of PERSON data)
+35. SDAFS.END       (end of SDAFS sub-transaction)
 ```
 
 Notice that this follows the same pattern as the request, with some different fields filled in. The transaction and

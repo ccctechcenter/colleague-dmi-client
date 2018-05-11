@@ -20,7 +20,7 @@ public class SingleKeyRequest extends DataRequest {
         super(account, token, controlId);
         String colNames = (columns != null) ? String.join(",", columns) : null;
 
-        super.addSubRequest(DataAccessType.SINGLEKEY, viewName, viewType, null, colNames, key);
+        super.addSubRequest(DataAccessType.SINGLEKEY, viewName, viewType, colNames, key);
         super.addHashSubRequest(sharedSecret);
     }
 }

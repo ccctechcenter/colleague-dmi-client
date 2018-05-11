@@ -3,6 +3,8 @@ package org.ccctc.colleaguedmiclient.service;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.ccctc.colleaguedmiclient.exception.DmiTransactionException;
 import org.ccctc.colleaguedmiclient.model.CddEntry;
 import org.ccctc.colleaguedmiclient.model.EntityMetadata;
@@ -29,6 +31,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class EntityMetadataService {
 
+    private final static Log log = LogFactory.getLog(EntityMetadataService.class);
+
     private final DmiCTXService dmiCTXService;
     private final Map<String, CacheEntry> cache;
 
@@ -54,8 +58,8 @@ public class EntityMetadataService {
      * @param entityName Entity Name
      * @return Entity Metadata
      */
-    public EntityMetadata GetEntity(String appl, String entityName) {
-        return GetEntity(appl, entityName, false);
+    public EntityMetadata getEntity(String appl, String entityName) {
+        return getEntity(appl, entityName, false);
     }
 
     /**
@@ -66,7 +70,7 @@ public class EntityMetadataService {
      * @param refreshCache Refresh Cache
      * @return Entity Metadata
      */
-    public EntityMetadata GetEntity(String appl, String entityName, boolean refreshCache) {
+    public EntityMetadata getEntity(String appl, String entityName, boolean refreshCache) {
         if (!refreshCache) {
             EntityMetadata cached = cacheGet(appl, entityName);
             if (cached != null) return cached;
@@ -146,7 +150,6 @@ public class EntityMetadataService {
         // @TODO - throw error for null response
         return null;
     }
-
 
     /**
      * Get an entry from the cache or null if not found. If an entry has expired it will not be returned - additionally

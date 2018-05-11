@@ -1,5 +1,10 @@
 package org.ccctc.colleaguedmiclient.transaction.data;
 
+/**
+ * Batch Select DMI Transaction. This type of data request will instruct the DMI to select one or more
+ * columns from a view based on selection criteria. If no selection criteria is specified, all records in the table
+ * will be returned.
+ */
 public class BatchSelectRequest extends DataRequest {
 
     /**
@@ -21,7 +26,7 @@ public class BatchSelectRequest extends DataRequest {
         super(account, token, controlId);
         String colNames = (columns != null) ? String.join(",", columns) : null;
 
-        super.addSubRequest(DataAccessType.BATCHSELECT, viewName, viewType, null, colNames, criteria);
+        super.addSubRequest(DataAccessType.BATCHSELECT, viewName, viewType, colNames, criteria);
         super.addHashSubRequest(sharedSecret);
     }
 }

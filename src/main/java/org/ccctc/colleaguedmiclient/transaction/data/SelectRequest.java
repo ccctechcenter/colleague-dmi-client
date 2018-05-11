@@ -34,15 +34,15 @@ public class SelectRequest extends DataRequest {
      * @param limitingKeys Limiting keys
      */
     public SelectRequest(String account, String token, String controlId, String sharedSecret, String viewName,
-                         String criteria, String[] limitingKeys) {
+                         String criteria, Iterable<String> limitingKeys) {
         super(account, token, controlId);
 
         String keys = (limitingKeys != null) ? String.join(Character.toString(StringUtils.SM), limitingKeys) : null;
 
         if (keys == null || keys.equals("")) {
-            super.addSubRequest(DataAccessType.SELECT, viewName, null, ViewOptions.L, null, criteria);
+            super.addSubRequest(DataAccessType.SELECT, viewName, null, null, criteria);
         } else {
-            super.addSubRequest(DataAccessType.SUBSELECT, viewName, null, ViewOptions.L, keys, criteria);
+            super.addSubRequest(DataAccessType.SUBSELECT, viewName, null, keys, criteria);
         }
 
         super.addHashSubRequest(sharedSecret);

@@ -2,6 +2,10 @@ package org.ccctc.colleaguedmiclient.transaction.data;
 
 import org.ccctc.colleaguedmiclient.util.StringUtils;
 
+/**
+ * Batch Keys DMI Transaction. This type of data request will instruct the DMI to select one or more
+ * columns from a view based on a list of keys.
+ */
 public class BatchKeysRequest extends DataRequest {
 
     /**
@@ -18,12 +22,12 @@ public class BatchKeysRequest extends DataRequest {
      * @param keys         Keys
      */
     public BatchKeysRequest(String account, String token, String controlId, String sharedSecret, String viewName,
-                       ViewType viewType, Iterable<String> columns, String[] keys) {
+                       ViewType viewType, Iterable<String> columns, Iterable<String> keys) {
         super(account, token, controlId);
         String colNames = (columns != null) ? String.join(",", columns) : null;
         String criteria = (keys != null) ? String.join(Character.toString(StringUtils.SM), keys) : null;
 
-        super.addSubRequest(DataAccessType.BATCHKEYS, viewName, viewType, null, colNames, criteria);
+        super.addSubRequest(DataAccessType.BATCHKEYS, viewName, viewType, colNames, criteria);
         super.addHashSubRequest(sharedSecret);
     }
 }

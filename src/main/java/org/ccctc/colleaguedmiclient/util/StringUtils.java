@@ -141,4 +141,39 @@ public class StringUtils {
         msdDigest.update(bytes, 0, bytes.length);
         return DatatypeConverter.printHexBinary(msdDigest.digest());
     }
+
+    /**
+     * Parse a string to an integer and return the value or null if conversion is not possible (rather than throwing
+     * an exception).
+     *
+     * @param value String
+     * @return Integer
+     */
+    public static Integer parseIntOrNull(String value) {
+        if (value != null) {
+            try {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException ignored) { }
+        }
+
+        return null;
+    }
+
+    /**
+     * Parse a string to an integer and return the value or a default if conversion is not possible (rather than throwing
+     * an exception).
+     *
+     * @param value        String
+     * @param defaultValue Default Value
+     * @return int
+     */
+    public static int parseIntOrDefault(String value, int defaultValue) {
+        if (value != null) {
+            try {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException ignored) { }
+        }
+
+        return defaultValue;
+    }
 }

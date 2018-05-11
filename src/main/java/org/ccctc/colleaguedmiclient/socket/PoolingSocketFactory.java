@@ -129,12 +129,13 @@ public class PoolingSocketFactory implements Closeable {
      * Get a socket from the pool by either finding an available socket or creating a new one. If the pool is full,
      * the request will wait until a socket becomes available, or the timeout expires.
      *
+     * @param forceNewSocket Force creation of a new socket (rather than using an already open socket)
      * @return Socket
      * @throws SocketException if the socket connection fails,if the timeout expires attempting to get an available
      *                         socket from the pool, or if the operation is interrupted waiting for an available socket
      *                         from the pool.
      */
-    public PooledSocket getSocket() throws SocketException {
+    public PooledSocket getSocket(boolean forceNewSocket) throws SocketException {
         try {
             lock.lock();
             while (used.size() >= poolSize) {
@@ -148,6 +149,12 @@ public class PoolingSocketFactory implements Closeable {
                 if (!socket.isClosed() && !socket.isExpired())
                     break;
                 socket = available.poll();
+            }
+
+            // if we're forcing a new socket, recycle the one we got from the available pool
+            if (forceNewSocket && socket != null) {
+                try { socket.recycle(); } catch (IOException ignored) { }
+                socket = null;
             }
 
             if (socket == null)
@@ -179,7 +186,6 @@ public class PoolingSocketFactory implements Closeable {
                         p.recycle();
                     }
                 } catch (IOException ignored) {
-
                 }
             }
 
