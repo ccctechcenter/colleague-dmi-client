@@ -99,7 +99,7 @@ class DmiDataServiceSpec extends Specification {
 
         then:
         1 * dmiService.send(_) >> response
-        1 * entityMetadataService.getEntity("APPL", "VIEW") >> metadata
+        1 * entityMetadataService.get("APPL", "VIEW") >> metadata
         result.key == "KEY"
         result.values.size() == fieldList.size()
         result.values["DATA.FIELD"] == stringValue
@@ -174,7 +174,7 @@ class DmiDataServiceSpec extends Specification {
 
         then:
         1 * dmiService.send(_) >> response
-        1 * entityMetadataService.getEntity("APPL", "VIEW") >> null
+        1 * entityMetadataService.get("APPL", "VIEW") >> null
         def e = thrown DmiTransactionException
         e.getMessage().contains("No entity information found")
 
@@ -184,7 +184,7 @@ class DmiDataServiceSpec extends Specification {
 
         then:
         1 * dmiService.send(_) >> response
-        1 * entityMetadataService.getEntity("APPL", "VIEW") >> metadata
+        1 * entityMetadataService.get("APPL", "VIEW") >> metadata
         e = thrown DmiTransactionException
         e.getMessage().contains("Invalid field requested")
 
@@ -255,7 +255,7 @@ class DmiDataServiceSpec extends Specification {
 
         then:
         1 * dmiService.send(_) >> response
-        1 * entityMetadataService.getEntity("APPL", "VIEW") >> metadata
+        1 * entityMetadataService.get("APPL", "VIEW") >> metadata
         result.size() == 2
         result[0].key == "KEY1"
         result[0].values["FIELD1"] == "VALUE1"
@@ -273,7 +273,7 @@ class DmiDataServiceSpec extends Specification {
         then:
         1 * dmiService.send(_) >> selectResponse
         1 * dmiService.send(_) >> response
-        1 * entityMetadataService.getEntity("APPL", "VIEW") >> metadata
+        1 * entityMetadataService.get("APPL", "VIEW") >> metadata
         result.size() == 2
         result[0].key == "KEY1"
         result[0].values["FIELD1"] == "VALUE1"
@@ -349,7 +349,7 @@ class DmiDataServiceSpec extends Specification {
         then:
         1 * dmiService.send(_) >> response1
         1 * dmiService.send(_) >> response2
-        2 * entityMetadataService.getEntity("APPL", "VIEW") >> metadata
+        2 * entityMetadataService.get("APPL", "VIEW") >> metadata
         result.size() == 1234
 
         // check two random values from each batch
@@ -399,9 +399,13 @@ class DmiDataServiceSpec extends Specification {
 
 
     def "non null parameters coverage"() {
-        when: new DmiDataService(null, null)
+        when: new DmiDataService(null, (DmiCTXService) null)
         then: thrown NullPointerException
-        when: new DmiDataService(dmiService, null)
+        when: new DmiDataService(null, (EntityMetadataService) null)
+        then: thrown NullPointerException
+        when: new DmiDataService(dmiService, (DmiCTXService) null)
+        then: thrown NullPointerException
+        when: new DmiDataService(dmiService, (EntityMetadataService) null)
         then: thrown NullPointerException
 
         when: dmiDataService.singleKey(null, null, null, null)
