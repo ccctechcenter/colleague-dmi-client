@@ -76,9 +76,6 @@ public class DataResponse {
 
         String[] commands = subTransaction.getCommands();
 
-        if (!SDAFS.equals(subTransaction.getTransactionType()))
-            throw new DmiTransactionException("Unexpected sub transaction type encountered: " + subTransaction.getTransactionType());
-
         if (commands.length < 11)
             throw new DmiTransactionException("Malformed response: sub transaction not long enough");
 

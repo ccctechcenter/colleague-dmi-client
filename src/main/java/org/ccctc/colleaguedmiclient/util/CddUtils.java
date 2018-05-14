@@ -15,6 +15,8 @@ public class CddUtils {
 
     private static final Log log = LogFactory.getLog(CddUtils.class);
 
+    private static final String EMPTY_STRING = "";
+
     /**
      * Get data type information from a CDD Entry, including Java type, array (true/false) and numeric scale
      *
@@ -90,6 +92,8 @@ public class CddUtils {
      * <p>
      * The result will either be single-value or multi-valued based on the data type. Multi-valued types are returned
      * as arrays, ie String[], Integer[], etc.
+     * <p>
+     * Note: For string values, an empty string is converted to null.
      *
      * @param value    Value to convert
      * @param cddEntry CDD Entry
@@ -132,7 +136,7 @@ public class CddUtils {
 
         try {
             if (c == String.class)
-                return value;
+                return EMPTY_STRING.equals(value) ? null : value;
 
             if (c == LocalDate.class)
                 return StringUtils.dateFromString(value);

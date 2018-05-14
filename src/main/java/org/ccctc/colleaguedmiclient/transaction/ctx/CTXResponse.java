@@ -1,6 +1,8 @@
 package org.ccctc.colleaguedmiclient.transaction.ctx;
 
 import lombok.Getter;
+import lombok.NonNull;
+import lombok.ToString;
 import org.ccctc.colleaguedmiclient.exception.DmiTransactionException;
 import org.ccctc.colleaguedmiclient.transaction.DmiSubTransaction;
 import org.ccctc.colleaguedmiclient.transaction.DmiTransaction;
@@ -8,73 +10,85 @@ import org.ccctc.colleaguedmiclient.transaction.DmiTransaction;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.ccctc.colleaguedmiclient.util.StringUtils.parseIntOrNull;
+
+/**
+ * Response from a DMI transaction that requested to run a Colleague Transaction. This should be instantiated by
+ * calling @{code fromDmiTransaction()} with the DMI response from a @{code CTXRequest}.
+ *
+ * @see org.ccctc.colleaguedmiclient.service.DmiCTXService
+ * @see CTXRequest
+ */
+@Getter
+@ToString
 public class CTXResponse {
 
-    @Getter private final Map<String, String> response = new HashMap<>();
+    private static final String SCTRS = "SCTRS";
+    private static final String SCTVAL = "SCTVAL";
 
+    /**
+     * Variables returned by the CTX transaction
+     */
+    private final Map<String, String> variables = new HashMap<>();
+
+    /**
+     * Create a CTX response from a DMI Transaction
+     *
+     * @param transaction DMI Transaction
+     * @return CTX Response
+     */
     public static CTXResponse fromDmiTransaction(DmiTransaction transaction) {
-        assert "CTRS".equals(transaction.getTransactionType());
-        assert "CTRQ".equals(transaction.getInResponseTo());
-
         if (transaction.getSubTransactions().size() > 0) {
             DmiSubTransaction sctrs = null;
             DmiSubTransaction sctval = null;
 
             for (DmiSubTransaction sub : transaction.getSubTransactions()) {
-                if ("SCTRS".equals(sub.getTransactionType()))
+                if (SCTRS.equals(sub.getTransactionType()))
                     sctrs = sub;
-                if ("SCTVAL".equals(sub.getTransactionType()))
+                if (SCTVAL.equals(sub.getTransactionType()))
                     sctval = sub;
             }
 
-            return new CTXResponse(sctrs, sctval);
+            if (sctrs != null && sctval != null)
+                return new CTXResponse(sctrs, sctval);
         }
 
-
-        return null;
+        throw new DmiTransactionException("DMI Transaction does not contain a response to a Colleague Transaction");
     }
 
-    public CTXResponse(DmiSubTransaction sctrs, DmiSubTransaction sctval) {
-
-        // @TODO - length of 3 is probably an ERR block ? process accordingly.
-
-        /*
-        if (arguments.Count == 3)
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-            foreach (string argument in arguments)
-            {
-                stringBuilder.Append(argument).Append(" \n");
-            }
-            throw new DataReaderErrorResponseException(stringBuilder.ToString());
-        } */
+    /**
+     * Create a data response from a sub transactions of types SCTRS and SCTVAL
+     *
+     * @param sctrs SCTRS sub transaction
+     * @param sctval SCTVAL sub transaction
+     */
+    private CTXResponse(@NonNull DmiSubTransaction sctrs, @NonNull DmiSubTransaction sctval) {
 
         // @TODO - what do we need sctrs for ?
-        if (sctrs != null) {
 
-        }
+        // SCTVAL contains the values of the output variables
+        String[] commands = sctval.getCommands();
 
-        if (sctval != null) {
-            assert "SCTVAL".equals(sctval.getTransactionType());
-            assert sctval.getCommands().length >= 2;
+        if (commands.length < 2)
+            throw new DmiTransactionException("Malformed response: sub transaction not long enough");
 
-            String[] commands = sctval.getCommands();
+        Integer variablesCount = parseIntOrNull(commands[1]);
+        if (variablesCount == null)
+            throw new DmiTransactionException("Malformed response: variable count is missing");
 
-            int paramCount;
-            try {
-                paramCount = Integer.parseInt(commands[1]);
-            } catch (NumberFormatException e) {
-                throw new DmiTransactionException("Invalid parameter count");
-            }
+        for (int x = 0; x < variablesCount; x++) {
+            int pos = 2 + x * 4;
 
-            // @TODO - array size checks
-            for (int x = 0; x < paramCount; x++) {
-                int pos = 2 + x * 4;
+            if (commands.length <= pos + 1)
+                throw new DmiTransactionException("Malformed response: end of transaction before all variables read");
 
-                String key = commands[pos];
-                String value = commands[pos+1];
+            String key = commands[pos];
+            String value = commands[pos+1];
 
-                this.response.put(key, value);
+            if (key != null) {
+                // it has been found that spaces can exist erroneously in transactions, notably in GET.CTX.DETAILS
+                key = key.replace(" ", "");
+                variables.put(key, value);
             }
         }
     }

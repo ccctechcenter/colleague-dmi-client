@@ -54,8 +54,7 @@ int poolSize = 10;
 
 try (DmiService dmiService = new DmiService(account, username, password, ipAddress, port, secure, hostnameOverride, sharedSecret, poolSize)) {
     DmiCTXService dmiCTXService = new DmiCTXService(dmiService);
-    EntityMetadataService entityMetadataService = new EntityMetadataService(dmiCTXService);
-    DmiDataService dmiDataService = new DmiDataService(dmiService, entityMetadataService);
+    DmiDataService dmiDataService = new DmiDataService(dmiService, dmiCTXService);
     
     // perform code here ... 
 }
@@ -76,7 +75,7 @@ __DmiService__
    the DMI Service will request new credentials via a login request.
 2. `maxDmiTransactionRetry` - Maximum attempts to sending / receiving a DMI Transaction. Default is 2.
 
-__EntityMetadataService__
+__EntityMetadataService and CTXMetadataService__
 
 1. `cacheExpirationSeconds` - Number of seconds before a cache entry will expire. Default is 24 hours.
 
@@ -113,24 +112,25 @@ public class DmiClientConfig {
     }
 
     @Bean
-    public DmiCTXService dmiCTXService(DmiService dmiService) {
-         return new DmiCTXService(dmiService);
-    }
+    public DmiCTXService dmiCTXService(DmiService dmiService,
+                                       @Value("${dmi.metadata.expiration.seconds:-1}") int metadataExpirationSeconds) {) {
+         DmiCTXService d = new DmiCTXService(dmiService);
 
-    @Bean
-    public EntityMetadataService entityMetadataService(DmiCTXService dmiCTXService, 
-                                                       @Value("${dmi.metadata.expiration.seconds:-1}") int metadataExpirationSeconds) {
-        EntityMetadataService e = new EntityMetadataService(dmiCTXService);
-        
         if (metadataExpirationSeconds >= 0)
-            e.setCacheExpirationSeconds(metadataExpirationSeconds);
+            d.getCtxMetadataService().setCacheExpirationSeconds(metadataExpirationSeconds);
         
-        return e;
+        return d;
     }
 
     @Bean
-    public DmiDataService dmiDataService(DmiService dmiService, EntityMetadataService entityMetadataService) {
-        return new DmiDataService(dmiService, entityMetadataService);
+    public DmiDataService dmiDataService(DmiService dmiService, DmiCTXService dmiCTXService, 
+                                         @Value("${dmi.metadata.expiration.seconds:-1}") int metadataExpirationSeconds) {
+        DmiDataService d = new DmiDataService(dmiService, dmiCTXService);
+
+        if (metadataExpirationSeconds >= 0)
+            d.getEntityMetadataService().setCacheExpirationSeconds(metadataExpirationSeconds);
+        
+        return d;
     }
 }
 ```
@@ -184,6 +184,10 @@ The DMI Data Service is used to read data from Colleague.
 
 * ``selectKeys`` - retrieve a list of primary keys to a table based on selection criteria and/or limiting keys
 
+#### Data Types ####
+
+See Appendix A: Data Types
+
 #### Selection Criteria ####
 
 
@@ -192,21 +196,66 @@ The DMI Data Service is used to read data from Colleague.
 
 ### DMI CTX (Colleague Transaction) Service ###
 
-@TODO
+The DMI CTX Service is used to run Colleague Transactions.
+
+#### Methods ####
+
+* `execute` - execute a CTX and return the results. The results are translated into the appropriate data types and aliases.
+
+* `executeRaw` - execute a CTX and return the "raw" results without any translation of data types or variable names.
+
+#### Data Types ####
+
+See Appendix A: Data Types 
 
 
 ### Entity Metadata Service ###
 
-@TODO
+The `DmiDataService` uses another service - `EntityMetadataService` - to translate the results of a data request into the
+proper data types and field names.
+
+By default, `DmiDataService` will instantiate a `EntityMetadataService` when it is created, though you have the option of
+creating your own and passing it to the constructor.
+
+### CTX Metadata Service ###
+
+The `DmiCTXService` uses another service - `CTXMetadataService` - to translate the results of a transaction into the
+proper data types and names (known as "aliases" when you create a Colleague Transaction in Colleague Studio). It also
+groups associated fields of a transaction into their proper "associations".
+
+By default, `DmiCTXService` will instantiate a `CTXMetadataService` when it is created, though you have the option of
+creating your own and passing it to the constructor.
+
+## APPENDIX A: Data Types ##
+
+Both `DmiDataService` and `DmiCTXService` use metadata to translate their results into Java Types. The following data
+types are possible:
+
+* String
+* Integer
+* Long
+* BigDecimal
+* LocalDate
+* LocalTime
+* Boolean - for CTX variables only
+
+Notes:
+
+* Empty strings are converted to nulls
+* Boolean is used for CTX variables only and corresponds to the "Boolean" checkbox in Colleague Studio. A Boolean value
+  is determined by the first character - 1, Y or y is true and 0, N or n is false. Any other value is null.
+* BigDecimal is used for all numeric types with a decimal.
+* Numeric types without a decimal component are returned as either Integer or Long depending on the maximum size of the
+  value.
 
 
-## APPENDIX A: The Anatomy of a DMI Transaction ##
+## APPENDIX B: The Anatomy of a DMI Transaction ##
 
 ### Disclaimer ###
 
-**Note: this section is purely for understanding the nuts of bolts of how this client works, which could come in
+__Note: this section is purely for understanding the nuts of bolts of how this client works, which could come in
 handy if you are working on bug fixes and improvements to this code. If you are just using the client itself,
-you do not need to read this section!** 
+you do not need to read this section!__
 
 ### Now Then ... ###
 

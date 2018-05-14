@@ -1,0 +1,28 @@
+DMI
+1.4
+CTRS
+dev0_rt
+UT
+(token)
+
+979697290ýj1
+18394
+61334
+HOST
+CTRQ
+
+
+18394
+61334
+SERRS
+7
+0
+UNKNOWN
+UNKNOWN
+ERROR: [BAD.TRANSACTION] does not exist
+SERRS.END
+----- (this line is not part of the transaction. raw transaction below.) -----
+DMIþ1.4þCTRSþdev0_rtþUTþ(token)þþ979697290ýj1þ18394þ61334þHOSTþCTRQþþþ18394þ61334þSERRSþ7þ0þUNKNOWNþUNKNOWNþERROR: [BAD.TRANSACTION] does not existþSERRS.END
+-----
+Note:
+1. This error occurs when you try to run a CTX transaction that does not exist, for example, one named "BAD.TRANSACTION"

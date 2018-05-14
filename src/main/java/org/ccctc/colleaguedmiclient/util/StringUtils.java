@@ -17,6 +17,7 @@ public class StringUtils {
     public final static char TM = (char) 251;
     public final static LocalDate BASE_DATE = LocalDate.of(1967, 12, 31);
 
+
     /**
      * Convert a UniData date string to a LocalDate.
      * <p>
@@ -38,6 +39,7 @@ public class StringUtils {
         return result;
     }
 
+
     /**
      * Convert a LocalDate to a UniData date string
      *
@@ -51,6 +53,7 @@ public class StringUtils {
 
         return null;
     }
+
 
     /**
      * Convert a UniData time string to a LocalTime.
@@ -97,7 +100,7 @@ public class StringUtils {
      *
      * @param str String
      * @param delimiter Delimiter
-     * @return Split strings
+     * @return Split string
      */
     public static String[] split(String str, char delimiter) {
         if (str == null) return null;
@@ -112,6 +115,19 @@ public class StringUtils {
         } while(next != -1 && start < str.length());
 
         return results.toArray(new String[0]);
+    }
+
+
+    /**
+     * Split a string at a character delimiter. If the string to split is null, an empty array will be returned.
+     *
+     * @param str      String to split
+     * @param delimiter Delimiter
+     * @return Split string
+     */
+    public static String[] splitOrEmpty(String str, char delimiter) {
+        if (str == null) return new String[0];
+        return split(str, delimiter);
     }
 
 
@@ -165,6 +181,7 @@ public class StringUtils {
         return DatatypeConverter.printHexBinary(msdDigest.digest());
     }
 
+
     /**
      * Parse a string to an integer and return the value or null if conversion is not possible (rather than throwing
      * an exception).
@@ -181,6 +198,7 @@ public class StringUtils {
 
         return null;
     }
+
 
     /**
      * Parse a string to an integer and return the value or a default if conversion is not possible (rather than throwing

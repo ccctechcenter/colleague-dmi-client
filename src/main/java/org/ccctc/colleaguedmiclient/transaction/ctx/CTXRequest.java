@@ -16,13 +16,13 @@ public class CTXRequest extends DmiTransaction {
     /**
      * Create a DMI Transaction to run a Colleague Transaction.
      *
-     * @param account Account
-     * @param token Token
-     * @param controlId Control ID
-     * @param sharedSecret Shared Secret
-     * @param appl Application
+     * @param account         Account
+     * @param token           Token
+     * @param controlId       Control ID
+     * @param sharedSecret    Shared Secret
+     * @param appl            Application
      * @param transactionName Transaction name
-     * @param parameters Parameters
+     * @param parameters      Parameters
      */
     public CTXRequest(String account, String token, String controlId, String sharedSecret,
                       String appl, String transactionName, List<KeyValuePair<String, String>> parameters) {
@@ -31,6 +31,14 @@ public class CTXRequest extends DmiTransaction {
         super.addHashSubRequest(sharedSecret);
     }
 
+    /**
+     * Create the SCTRQ sub transaction for a request
+     *
+     * @param appl            Application
+     * @param transactionName Transaction Name
+     * @param parameters      Parameters
+     * @return Sub transaction
+     */
     private DmiSubTransaction subTransaction(String appl, String transactionName,
                                              List<KeyValuePair<String, String>> parameters) {
 
@@ -40,7 +48,7 @@ public class CTXRequest extends DmiTransaction {
         request.add(transactionName);
 
         if (parameters != null && parameters.size() > 0) {
-            request.add("SCTVAL");
+            request.add(SCTVAL);
 
             // header:
             // total size of SCTVAL block
