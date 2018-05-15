@@ -1,5 +1,6 @@
 package org.ccctc.colleaguedmiclient.service;
 
+import lombok.NonNull;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.ccctc.colleaguedmiclient.exception.DmiMetadataException;
@@ -39,7 +40,7 @@ public class CTXMetadataService {
      *
      * @param dmiCTXService DMI Colleague Transaction Service
      */
-    public CTXMetadataService(DmiCTXService dmiCTXService) {
+    public CTXMetadataService(@NonNull DmiCTXService dmiCTXService) {
         this.dmiCTXService = dmiCTXService;
         this.cache = new MetadataCache<>(DEFAULT_CACHE_EXPIRATION_SECONDS);
     }
@@ -98,115 +99,108 @@ public class CTXMetadataService {
         Map<String, String> m = dmiCTXService.executeRaw("UT", "GET.CTX.DETAILS", params);
 
         if (m != null) {
-            try {
+            String prcsAliasName = m.get("TV.PRCS.ALIAS.NAME");
+            String isAnonymousCtx = m.get("TV.IS.ANONYMOUS.CTX");
+            String prcsInquiryOnly = m.get("TV.PRCS.INQUIRY.ONLY");
+            Integer prcsVersion = parseIntOrNull(m.get("TV.PRCS.VERSION"));
 
-                String prcsAliasName = m.get("TV.PRCS.ALIAS.NAME");
-                String isAnonymousCtx = m.get("TV.IS.ANONYMOUS.CTX");
-                String prcsInquiryOnly = m.get("TV.PRCS.INQUIRY.ONLY");
-                Integer prcsVersion = parseIntOrNull(m.get("TV.PRCS.VERSION"));
+            String[] elementName = split(m.get("TV.ELEMENT.NAME"), VM);
+            String[] pointsToFile = split(m.get("TV.POINTS.TO.FILE"), VM);
+            String[] elementRequired = split(m.get("TV.ELEMENT.REQUIRED"), VM);
+            String[] elementDirection = split(m.get("TV.ELEMENT.DIRECTION"), VM);
+            String[] assocName = split(m.get("TV.ASSOC.NAME"), VM);
+            String[] assocAliasName = split(m.get("TV.ASSOC.ALIAS.NAME"), VM);
+            String[] assocRange = split(m.get("TV.ASSOC.RANGE"), VM);
+            String[] varName = split(m.get("TV.VAR.NAME"), VM);
+            String[] varAliasName = split(m.get("TV.VAR.ALIAS.NAME"), VM);
+            String[] varRequired = split(m.get("TV.VAR.REQUIRED"), VM);
+            String[] varDirection = split(m.get("TV.VAR.DIRECTION"), VM);
+            String[] varDataType = split(m.get("TV.VAR.DATA.TYPE"), VM);
+            String[] elementAliasName = split(m.get("TV.ELEMENT.ALIAS.NAME"), VM);
+            String[] elementDispOnly = split(m.get("TV.ELEMENT.DISP.ONLY"), VM);
+            String[] elementConv = split(m.get("TV.ELEMENT.CONV"), VM);
+            String[] varConv = split(m.get("TV.VAR.CONV"), VM);
+            String[] assocType = split(m.get("TV.ASSOC.TYPE"), VM);
+            String[] assocMembers = split(m.get("TV.ASSOC.MEMBERS"), VM);
+            String[] elementGroup = split(m.get("TV.ELEMENT.GROUP"), VM);
+            String[] varGroup = split(m.get("TV.VAR.GROUP"), VM);
+            String[] elementIsBool = split(m.get("TV.ELEMENT.IS.BOOL"), VM);
+            String[] varIsBool = split(m.get("TV.VAR.IS.BOOL"), VM);
+            String[] elementSize = split(m.get("TV.ELEMENT.SIZE"), VM);
+            String[] varSize = split(m.get("TV.VAR.SIZE"), VM);
+            String[] elementDataType = split(m.get("TV.ELEMENT.DATA.TYPE"), VM);
+            String[] varIsUri = split(m.get("TV.VAR.IS.URI"), VM);
 
-                String[] elementName = split(m.get("TV.ELEMENT.NAME"), VM);
-                String[] pointsToFile = split(m.get("TV.POINTS.TO.FILE"), VM);
-                String[] elementRequired = split(m.get("TV.ELEMENT.REQUIRED"), VM);
-                String[] elementDirection = split(m.get("TV.ELEMENT.DIRECTION"), VM);
-                String[] assocName = split(m.get("TV.ASSOC.NAME"), VM);
-                String[] assocAliasName = split(m.get("TV.ASSOC.ALIAS.NAME"), VM);
-                String[] assocRange = split(m.get("TV.ASSOC.RANGE"), VM);
-                String[] varName = split(m.get("TV.VAR.NAME"), VM);
-                String[] varAliasName = split(m.get("TV.VAR.ALIAS.NAME"), VM);
-                String[] varRequired = split(m.get("TV.VAR.REQUIRED"), VM);
-                String[] varDirection = split(m.get("TV.VAR.DIRECTION"), VM);
-                String[] varDataType = split(m.get("TV.VAR.DATA.TYPE"), VM);
-                String[] elementAliasName = split(m.get("TV.ELEMENT.ALIAS.NAME"), VM);
-                String[] elementDispOnly = split(m.get("TV.ELEMENT.DISP.ONLY"), VM);
-                String[] elementConv = split(m.get("TV.ELEMENT.CONV"), VM);
-                String[] varConv = split(m.get("TV.VAR.CONV"), VM);
-                String[] assocType = split(m.get("TV.ASSOC.TYPE"), VM);
-                String[] assocMembers = split(m.get("TV.ASSOC.MEMBERS"), VM);
-                String[] elementGroup = split(m.get("TV.ELEMENT.GROUP"), VM);
-                String[] varGroup = split(m.get("TV.VAR.GROUP"), VM);
-                String[] elementIsBool = split(m.get("TV.ELEMENT.IS.BOOL"), VM);
-                String[] varIsBool = split(m.get("TV.VAR.IS.BOOL"), VM);
-                String[] elementSize = split(m.get("TV.ELEMENT.SIZE"), VM);
-                String[] varSize = split(m.get("TV.VAR.SIZE"), VM);
-                String[] elementDataType = split(m.get("TV.ELEMENT.DATA.TYPE"), VM);
-                String[] varIsUri = split(m.get("TV.VAR.IS.URI"), VM);
+            List<CTXElement> elements = new ArrayList<>();
+            List<CTXVariable> variables = new ArrayList<>();
+            List<CTXAssociation> associations = new ArrayList<>();
 
-                List<CTXElement> elements = new ArrayList<>();
-                List<CTXVariable> variables = new ArrayList<>();
-                List<CTXAssociation> associations = new ArrayList<>();
+            if (elementName != null) {
+                for (int x = 0; x < elementName.length; x++) {
+                    CTXElement e = CTXElement.builder()
+                            .elementName(getAt(elementName, x))
+                            .pointsToFile(getAt(pointsToFile, x))
+                            .elementRequired(getAt(elementRequired, x))
+                            .elementDirection(getAt(elementDirection, x))
+                            .elementAliasName(getAt(elementAliasName, x))
+                            .elementDispOnly(getAt(elementDispOnly, x))
+                            .elementConv(getAt(elementConv, x))
+                            .elementGroup(getAt(elementGroup, x))
+                            .elementIsBool(getAt(elementIsBool, x))
+                            .elementSize(getAt(elementSize, x))
+                            .elementDataType(getAt(elementDataType, x))
+                            .build();
 
-                if (elementName != null) {
-                    for (int x = 0; x < elementName.length; x++) {
-                        CTXElement e = CTXElement.builder()
-                                .elementName(getAt(elementName, x))
-                                .pointsToFile(getAt(pointsToFile, x))
-                                .elementRequired(getAt(elementRequired, x))
-                                .elementDirection(getAt(elementDirection, x))
-                                .elementAliasName(getAt(elementAliasName, x))
-                                .elementDispOnly(getAt(elementDispOnly, x))
-                                .elementConv(getAt(elementConv, x))
-                                .elementGroup(getAt(elementGroup, x))
-                                .elementIsBool(getAt(elementIsBool, x))
-                                .elementSize(getAt(elementSize, x))
-                                .elementDataType(getAt(elementDataType, x))
-                                .build();
-
-                        elements.add(e);
-                    }
+                    elements.add(e);
                 }
-
-                if (varName != null) {
-                    for (int x = 0; x < varName.length; x++) {
-                        CTXVariable v = CTXVariable.builder()
-                                .varName(getAt(varName, x))
-                                .varAliasName(getAt(varAliasName, x))
-                                .varRequired(getAt(varRequired, x))
-                                .varDirection(getAt(varDirection, x))
-                                .varDataType(getAt(varDataType, x))
-                                .varConv(getAt(varConv, x))
-                                .varGroup(getAt(varGroup, x))
-                                .varIsBool(getAt(varIsBool, x))
-                                .varSize(getAt(varSize, x))
-                                .varIsUri(getAt(varIsUri, x))
-                                .build();
-
-                        variables.add(v);
-                    }
-                }
-
-                if (assocName != null) {
-                    for (int x = 0; x < assocName.length; x++) {
-                        CTXAssociation a = CTXAssociation.builder()
-                                .assocName(getAt(assocName, x))
-                                .assocAliasName(getAt(assocAliasName, x))
-                                .assocRange(getAt(assocRange, x))
-                                .assocType(getAt(assocType, x))
-                                .assocMembers(split(getAt(assocMembers, x), ','))
-                                .build();
-
-                        associations.add(a);
-                    }
-                }
-
-
-                CTXMetadata c = CTXMetadata.builder()
-                        .prcsAliasName(prcsAliasName)
-                        .isAnonymousCtx(isAnonymousCtx)
-                        .prcsInquiryOnly(prcsInquiryOnly)
-                        .prcsVersion(prcsVersion)
-                        .variables(variables)
-                        .elements(elements)
-                        .associations(associations)
-                        .build();
-
-                cache.put(appl, transactionName, c);
-                return c;
-
-            } catch (NumberFormatException e) {
-                throw new DmiMetadataException("Error reading metadata: " + e.getClass().getName() + ": " +
-                        e.getMessage(), e);
             }
+
+            if (varName != null) {
+                for (int x = 0; x < varName.length; x++) {
+                    CTXVariable v = CTXVariable.builder()
+                            .varName(getAt(varName, x))
+                            .varAliasName(getAt(varAliasName, x))
+                            .varRequired(getAt(varRequired, x))
+                            .varDirection(getAt(varDirection, x))
+                            .varDataType(getAt(varDataType, x))
+                            .varConv(getAt(varConv, x))
+                            .varGroup(getAt(varGroup, x))
+                            .varIsBool(getAt(varIsBool, x))
+                            .varSize(getAt(varSize, x))
+                            .varIsUri(getAt(varIsUri, x))
+                            .build();
+
+                    variables.add(v);
+                }
+            }
+
+            if (assocName != null) {
+                for (int x = 0; x < assocName.length; x++) {
+                    CTXAssociation a = CTXAssociation.builder()
+                            .assocName(getAt(assocName, x))
+                            .assocAliasName(getAt(assocAliasName, x))
+                            .assocRange(getAt(assocRange, x))
+                            .assocType(getAt(assocType, x))
+                            .assocMembers(split(getAt(assocMembers, x), ','))
+                            .build();
+
+                    associations.add(a);
+                }
+            }
+
+
+            CTXMetadata c = CTXMetadata.builder()
+                    .prcsAliasName(prcsAliasName)
+                    .isAnonymousCtx(isAnonymousCtx)
+                    .prcsInquiryOnly(prcsInquiryOnly)
+                    .prcsVersion(prcsVersion)
+                    .variables(variables)
+                    .elements(elements)
+                    .associations(associations)
+                    .build();
+
+            cache.put(appl, transactionName, c);
+            return c;
         }
 
         throw new DmiMetadataException("Error reading metadata - unexpected response from DMI");

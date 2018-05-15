@@ -1,6 +1,6 @@
 package org.ccctc.colleaguedmiclient.service;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -93,7 +93,7 @@ class MetadataCache<T> implements Map<String, T> {
     public T get(Object key) {
         Entry<T> entry = cache.get(key);
         if (entry != null) {
-            if (entry.getExpirationDateTime().isAfter(LocalDateTime.now())) {
+            if (!entry.isExpired()) {
                 return entry.getValue();
             } else {
                 cache.remove(key.toString());
@@ -129,11 +129,13 @@ class MetadataCache<T> implements Map<String, T> {
 
     @Override
     public Set<String> keySet() {
+        removeExpired();
         return cache.keySet();
     }
 
     @Override
     public Collection<T> values() {
+        removeExpired();
         return cache.values().stream()
                 .map(Entry::getValue)
                 .collect(Collectors.toList());
@@ -141,15 +143,28 @@ class MetadataCache<T> implements Map<String, T> {
 
     @Override
     public Set<Map.Entry<String, T>> entrySet() {
+        removeExpired();
         return cache.entrySet().stream()
                 .map(i -> new AbstractMap.SimpleEntry<>(i.getKey(), i.getValue().getValue()))
                 .collect(Collectors.toSet());
     }
 
+
+    /**
+     * Remove expired values from the cache
+     */
+    private void removeExpired() {
+        for (Map.Entry<String, MetadataCache.Entry<T>> e : cache.entrySet()) {
+            if (e.getValue().isExpired())
+                remove(e.getKey());
+        }
+    }
+
+
     /**
      * Cached entry with an expiration date/time
      */
-    @Data
+    @AllArgsConstructor
     private static class Entry<T> {
         /**
          * Key of the entry in the format application + "*" + entry name. Example: CORE*PERSON.
@@ -159,11 +174,15 @@ class MetadataCache<T> implements Map<String, T> {
         /**
          * Value of the entry
          */
-        private final T value;
+        @Getter private final T value;
 
         /**
          * Expiration date and time of the entry
          */
-        private final LocalDateTime expirationDateTime;
+        @Getter private final LocalDateTime expirationDateTime;
+
+        boolean isExpired() {
+            return !expirationDateTime.isAfter(LocalDateTime.now());
+        }
     }
 }
