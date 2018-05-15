@@ -1,5 +1,6 @@
 package org.ccctc.colleaguedmiclient.service;
 
+import lombok.NonNull;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.ccctc.colleaguedmiclient.exception.DmiMetadataException;
@@ -14,6 +15,7 @@ import java.util.Map;
 
 import static org.ccctc.colleaguedmiclient.util.ArrayUtils.getAt;
 import static org.ccctc.colleaguedmiclient.util.ArrayUtils.getAtInt;
+import static org.ccctc.colleaguedmiclient.util.ArrayUtils.getAtIntOrNull;
 import static org.ccctc.colleaguedmiclient.util.StringUtils.VM;
 import static org.ccctc.colleaguedmiclient.util.StringUtils.split;
 
@@ -31,6 +33,7 @@ public class EntityMetadataService {
 
     private final static Log log = LogFactory.getLog(EntityMetadataService.class);
     private final static long DEFAULT_CACHE_EXPIRATION_SECONDS = 24 * 60 * 60;
+    private final static String EMPTY_STRING = "";
 
     private final DmiCTXService dmiCTXService;
     private final MetadataCache<EntityMetadata> cache;
@@ -41,29 +44,9 @@ public class EntityMetadataService {
      *
      * @param dmiCTXService DMI Colleague Transaction Service
      */
-    public EntityMetadataService(DmiCTXService dmiCTXService) {
+    public EntityMetadataService(@NonNull DmiCTXService dmiCTXService) {
         this.dmiCTXService = dmiCTXService;
         this.cache = new MetadataCache<>(DEFAULT_CACHE_EXPIRATION_SECONDS);
-    }
-
-
-    /**
-     * Get number of seconds before a new cache entry will expire.
-     *
-     * @return Cache entry expiration time in seconds
-     */
-    public long getCacheExpirationSeconds() {
-        return cache.getCacheExpirationSeconds();
-    }
-
-
-    /**
-     * Set number of seconds before a new cache entry will expire.
-     *
-     * @param cacheExpirationSeconds Cache entry expiration time in seconds
-     */
-    public void setCacheExpirationSeconds(long cacheExpirationSeconds) {
-        cache.setCacheExpirationSeconds(cacheExpirationSeconds);
     }
 
 
@@ -117,41 +100,45 @@ public class EntityMetadataService {
             String guidEnabled = m.get("TV.GUID.ENABLED");
 
             int maxFieldPlacement = 0;
-            for (int y = 0; y < fieldPlacements.length; y++) {
-                Integer p = getAtInt(fieldPlacements, y);
-                if (p != null && p > maxFieldPlacement) maxFieldPlacement = p;
+            if (fieldPlacements != null) {
+                for (int y = 0; y < fieldPlacements.length; y++) {
+                    Integer p = getAtIntOrNull(fieldPlacements, y);
+                    if (p != null && p > maxFieldPlacement) maxFieldPlacement = p;
+                }
             }
 
             Map<String, CddEntry> map = new HashMap<>();
             CddEntry[] ordered = new CddEntry[maxFieldPlacement];
 
-            for (int x = 0; x < names.length; x++) {
-                if (names[x] == null || names[x].equals("")) continue;
+            if (names != null) {
+                for (int x = 0; x < names.length; x++) {
+                    if (EMPTY_STRING.equals(names[x])) continue;
 
-                try {
-                    CddEntry.CddEntryBuilder b = CddEntry.builder();
+                    try {
+                        CddEntry.CddEntryBuilder b = CddEntry.builder();
 
-                    CddEntry e = b.name(getAt(names, x))
-                            .physName(getAt(physNames, x))
-                            .source(getAt(sources, x))
-                            .maximumStorageSize(getAtInt(maxStorageSizes, x))
-                            .fieldPlacement(getAtInt(fieldPlacements, x))
-                            .databaseUsageType(getAt(usageTypes, x))
-                            .defaultDisplaySize(getAt(defaultDisplaySize, x))
-                            .informFormatString(getAt(formatString, x))
-                            .informConversionString(getAt(conversionString, x))
-                            .dataType(getAt(dataTypes, x))
-                            .elementAssocName(getAt(assocNames, x))
-                            .elementAssocType(getAt(assocTypes, x))
-                            .build();
+                        CddEntry e = b.name(getAt(names, x))
+                                .physName(getAt(physNames, x))
+                                .source(getAt(sources, x))
+                                .maximumStorageSize(getAtInt(maxStorageSizes, x))
+                                .fieldPlacement(getAtInt(fieldPlacements, x))
+                                .databaseUsageType(getAt(usageTypes, x))
+                                .defaultDisplaySize(getAt(defaultDisplaySize, x))
+                                .informFormatString(getAt(formatString, x))
+                                .informConversionString(getAt(conversionString, x))
+                                .dataType(getAt(dataTypes, x))
+                                .elementAssocName(getAt(assocNames, x))
+                                .elementAssocType(getAt(assocTypes, x))
+                                .build();
 
-                    map.put(names[x], e);
+                        map.put(names[x], e);
 
-                    Integer placement = getAtInt(fieldPlacements, x);
-                    if (placement != null) ordered[placement - 1] = e;
-                } catch (NumberFormatException e) {
-                    throw new DmiMetadataException("Error reading metadata: " + e.getClass().getName() + ": " +
-                            e.getMessage(), e);
+                        Integer placement = getAtInt(fieldPlacements, x);
+                        if (placement != null && placement > 0) ordered[placement - 1] = e;
+                    } catch (NumberFormatException e) {
+                        throw new DmiMetadataException("Error reading metadata: " + e.getClass().getName() + ": " +
+                                e.getMessage(), e);
+                    }
                 }
             }
 
@@ -163,5 +150,33 @@ public class EntityMetadataService {
         }
 
         throw new DmiMetadataException("Error reading metadata - unexpected response from DMI");
+    }
+
+
+    /**
+     * Clear the cache
+     */
+    public void clearCache() {
+        cache.clear();
+    }
+
+
+    /**
+     * Get number of seconds before a new cache entry will expire.
+     *
+     * @return Cache entry expiration time in seconds
+     */
+    public long getCacheExpirationSeconds() {
+        return cache.getCacheExpirationSeconds();
+    }
+
+
+    /**
+     * Set number of seconds before a new cache entry will expire.
+     *
+     * @param cacheExpirationSeconds Cache entry expiration time in seconds
+     */
+    public void setCacheExpirationSeconds(long cacheExpirationSeconds) {
+        cache.setCacheExpirationSeconds(cacheExpirationSeconds);
     }
 }

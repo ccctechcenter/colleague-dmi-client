@@ -47,26 +47,6 @@ public class CTXMetadataService {
 
 
     /**
-     * Get number of seconds before a new cache entry will expire.
-     *
-     * @return Cache entry expiration time in seconds
-     */
-    public long getCacheExpirationSeconds() {
-        return cache.getCacheExpirationSeconds();
-    }
-
-
-    /**
-     * Set number of seconds before a new cache entry will expire.
-     *
-     * @param cacheExpirationSeconds Cache entry expiration time in seconds
-     */
-    public void setCacheExpirationSeconds(long cacheExpirationSeconds) {
-        cache.setCacheExpirationSeconds(cacheExpirationSeconds);
-    }
-
-
-    /**
      * Get metadata for a Colleague Transaction
      *
      * @param appl            Application
@@ -204,5 +184,33 @@ public class CTXMetadataService {
         }
 
         throw new DmiMetadataException("Error reading metadata - unexpected response from DMI");
+    }
+
+
+    /**
+     * Clear the cache
+     */
+    public void clearCache() {
+        cache.clear();
+    }
+
+
+    /**
+     * Get number of seconds before a new cache entry will expire.
+     *
+     * @return Cache entry expiration time in seconds
+     */
+    public long getCacheExpirationSeconds() {
+        return cache.getCacheExpirationSeconds();
+    }
+
+
+    /**
+     * Set number of seconds before a new cache entry will expire.
+     *
+     * @param cacheExpirationSeconds Cache entry expiration time in seconds
+     */
+    public void setCacheExpirationSeconds(long cacheExpirationSeconds) {
+        cache.setCacheExpirationSeconds(cacheExpirationSeconds);
     }
 }

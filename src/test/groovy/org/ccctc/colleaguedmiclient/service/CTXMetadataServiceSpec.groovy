@@ -13,17 +13,6 @@ class CTXMetadataServiceSpec extends Specification {
         then: thrown NullPointerException
     }
 
-    def "get / set cache expiration"() {
-        setup:
-        def d = new CTXMetadataService(Mock(DmiCTXService))
-
-        when:
-        d.setCacheExpirationSeconds(100)
-
-        then:
-        d.getCacheExpirationSeconds() == 100
-    }
-
     def "get - no variables / cached / cache refresh"() {
         setup:
         def c = Mock(DmiCTXService)
@@ -42,37 +31,39 @@ class CTXMetadataServiceSpec extends Specification {
 
         // second get - from cache
         when:
-        m = d.get("appl", "TRANSACTION.NAME")
+        d.get("appl", "TRANSACTION.NAME")
 
         then:
         0 * _
-        m.variables == []
-        m.elements == []
-        m.associations == []
 
         // refresh cache, set value to expire immediately
         when:
         d.setCacheExpirationSeconds(0)
-        m = d.get("appl", "TRANSACTION.NAME", true)
+        d.get("appl", "TRANSACTION.NAME", true)
 
         then:
         1 * c.executeRaw(*_) >> ["TV.PRCS.ALIAS.NAME": "Alias"]
         0 * _
-        m.variables == []
-        m.elements == []
-        m.associations == []
+        d.getCacheExpirationSeconds() == 0
 
         // cache value expired
         when:
-        m = d.get("appl", "TRANSACTION.NAME", true)
+        d.get("appl", "TRANSACTION.NAME")
 
         then:
         1 * c.executeRaw(*_) >> ["TV.PRCS.ALIAS.NAME": "Alias"]
         0 * _
-        m.variables == []
-        m.elements == []
-        m.associations == []
 
+        // clear cache works
+        when:
+        d.setCacheExpirationSeconds(100)
+        d.get("appl", "TRANSACTION.NAME")
+        d.clearCache()
+        d.get("appl", "TRANSACTION.NAME")
+
+        then:
+        2 * c.executeRaw(*_) >> ["TV.PRCS.ALIAS.NAME": "Alias"]
+        0 * _
     }
 
     def "get - exception"() {
