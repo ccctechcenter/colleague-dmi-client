@@ -9,7 +9,7 @@ import org.apache.commons.logging.LogFactory;
 import org.ccctc.colleaguedmiclient.exception.DmiServiceException;
 import org.ccctc.colleaguedmiclient.model.SessionCredentials;
 import org.ccctc.colleaguedmiclient.socket.PooledSocket;
-import org.ccctc.colleaguedmiclient.transaction.DmiSubTransaction;
+import org.ccctc.colleaguedmiclient.model.DmiSubTransaction;
 import org.ccctc.colleaguedmiclient.transaction.DmiTransaction;
 import org.ccctc.colleaguedmiclient.socket.PoolingSocketFactory;
 import org.ccctc.colleaguedmiclient.transaction.LoginRequest;

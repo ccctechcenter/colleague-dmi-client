@@ -4,7 +4,7 @@ import org.ccctc.colleaguedmiclient.exception.DmiTransactionException
 import org.ccctc.colleaguedmiclient.model.CddEntry
 import org.ccctc.colleaguedmiclient.model.EntityMetadata
 import org.ccctc.colleaguedmiclient.model.SessionCredentials
-import org.ccctc.colleaguedmiclient.transaction.DmiSubTransaction
+import org.ccctc.colleaguedmiclient.model.DmiSubTransaction
 import org.ccctc.colleaguedmiclient.transaction.DmiTransaction
 import org.ccctc.colleaguedmiclient.transaction.data.ViewType
 import org.ccctc.colleaguedmiclient.util.StringUtils

@@ -1,4 +1,4 @@
-package org.ccctc.colleaguedmiclient.transaction;
+package org.ccctc.colleaguedmiclient.model;
 
 import lombok.Data;
 

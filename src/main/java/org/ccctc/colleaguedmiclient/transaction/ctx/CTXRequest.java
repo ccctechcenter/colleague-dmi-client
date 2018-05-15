@@ -1,7 +1,7 @@
 package org.ccctc.colleaguedmiclient.transaction.ctx;
 
 import org.ccctc.colleaguedmiclient.model.KeyValuePair;
-import org.ccctc.colleaguedmiclient.transaction.DmiSubTransaction;
+import org.ccctc.colleaguedmiclient.model.DmiSubTransaction;
 import org.ccctc.colleaguedmiclient.transaction.DmiTransaction;
 
 import java.util.ArrayList;

@@ -1,5 +1,8 @@
 package org.ccctc.colleaguedmiclient.transaction;
 
+/**
+ * Request to the DMI for the session state
+ */
 public class SessionStateRequest extends DmiTransaction {
 
     private final static String UT = "UT";

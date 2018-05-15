@@ -1,7 +1,7 @@
 package org.ccctc.colleaguedmiclient.transaction.data
 
 import org.ccctc.colleaguedmiclient.exception.DmiTransactionException
-import org.ccctc.colleaguedmiclient.transaction.DmiSubTransaction
+import org.ccctc.colleaguedmiclient.model.DmiSubTransaction
 import org.ccctc.colleaguedmiclient.transaction.DmiTransaction
 import spock.lang.Specification
 

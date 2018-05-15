@@ -1,6 +1,6 @@
 package org.ccctc.colleaguedmiclient.transaction.data;
 
-import org.ccctc.colleaguedmiclient.transaction.DmiSubTransaction;
+import org.ccctc.colleaguedmiclient.model.DmiSubTransaction;
 import org.ccctc.colleaguedmiclient.transaction.DmiTransaction;
 
 /**

@@ -1,9 +1,11 @@
 package org.ccctc.colleaguedmiclient.transaction;
 
 import lombok.NonNull;
-import lombok.ToString;
+import org.ccctc.colleaguedmiclient.model.DmiSubTransaction;
 
-@ToString(callSuper = true)
+/**
+ * Login request transaction to authenticate with the DMI
+ */
 public class LoginRequest extends DmiTransaction {
 
     private static final String LGRQ = "LGRQ";

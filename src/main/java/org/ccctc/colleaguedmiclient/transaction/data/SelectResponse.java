@@ -4,9 +4,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
 import org.ccctc.colleaguedmiclient.exception.DmiTransactionException;
-import org.ccctc.colleaguedmiclient.transaction.DmiSubTransaction;
+import org.ccctc.colleaguedmiclient.model.DmiSubTransaction;
 import org.ccctc.colleaguedmiclient.transaction.DmiTransaction;
-import org.ccctc.colleaguedmiclient.util.StringUtils;
 
 import java.util.Arrays;
 

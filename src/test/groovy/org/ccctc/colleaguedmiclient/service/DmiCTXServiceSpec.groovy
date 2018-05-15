@@ -6,7 +6,7 @@ import org.ccctc.colleaguedmiclient.model.CTXMetadata
 import org.ccctc.colleaguedmiclient.model.CTXVariable
 import org.ccctc.colleaguedmiclient.model.KeyValuePair
 import org.ccctc.colleaguedmiclient.model.SessionCredentials
-import org.ccctc.colleaguedmiclient.transaction.DmiSubTransaction
+import org.ccctc.colleaguedmiclient.model.DmiSubTransaction
 import org.ccctc.colleaguedmiclient.transaction.DmiTransaction
 import org.ccctc.colleaguedmiclient.util.StringUtils
 import spock.lang.Specification

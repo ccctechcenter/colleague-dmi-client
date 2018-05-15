@@ -8,6 +8,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.ccctc.colleaguedmiclient.exception.DmiTransactionException;
 import org.ccctc.colleaguedmiclient.model.ByteSplitRemainder;
+import org.ccctc.colleaguedmiclient.model.DmiSubTransaction;
 import org.ccctc.colleaguedmiclient.util.ByteUtils;
 import org.ccctc.colleaguedmiclient.util.StringUtils;
 
