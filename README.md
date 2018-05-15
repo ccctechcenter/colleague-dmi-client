@@ -60,6 +60,9 @@ try (DmiService dmiService = new DmiService(account, username, password, ipAddre
 }
 ```
 
+> See [Samples](/samples) for this source code
+
+
 > Important note: `DmiService` implements `Closeable`. It's important to wrap it in a try-with-resources statement like
 > above or a try-finally block (calling `close()` in `finally`), to ensure the DMI Service is closed. This will ensure
 > all open sockets are closed when the service is closed. Better yet, use Spring Boot (below) and it should
@@ -85,6 +88,10 @@ __EntityMetadataService and CTXMetadataService__
 Configuration class (includes all required and optional parameters):
 
 ```java
+import org.ccctc.colleaguedmiclient.service.DmiCTXService;
+import org.ccctc.colleaguedmiclient.service.DmiDataService;
+import org.ccctc.colleaguedmiclient.service.DmiService;
+
 @Configuration
 public class DmiClientConfig {
 
@@ -101,39 +108,41 @@ public class DmiClientConfig {
                                  @Value("${dmi.authorization.expiration.seconds:-1}") long authorizationExpirationSeconds,
                                  @Value("${dmi.max.transaction.retry:-1}") int maxDmiTransactionRetry) {
         DmiService d = new DmiService(account, username, password, host, port, secure, hostnameOverride, sharedSecret, poolSize);
-        
+
         if (authorizationExpirationSeconds >= 0)
             d.setAuthorizationExpirationSeconds(authorizationExpirationSeconds);
-        
+
         if (maxDmiTransactionRetry >= 0)
             d.setMaxDmiTransactionRetry(maxDmiTransactionRetry);
-        
+
         return d;
     }
 
     @Bean
     public DmiCTXService dmiCTXService(DmiService dmiService,
-                                       @Value("${dmi.metadata.expiration.seconds:-1}") int metadataExpirationSeconds) {) {
-         DmiCTXService d = new DmiCTXService(dmiService);
+                                       @Value("${dmi.metadata.expiration.seconds:-1}") int metadataExpirationSeconds) {
+        DmiCTXService d = new DmiCTXService(dmiService);
 
         if (metadataExpirationSeconds >= 0)
             d.getCtxMetadataService().setCacheExpirationSeconds(metadataExpirationSeconds);
-        
+
         return d;
     }
 
     @Bean
-    public DmiDataService dmiDataService(DmiService dmiService, DmiCTXService dmiCTXService, 
+    public DmiDataService dmiDataService(DmiService dmiService, DmiCTXService dmiCTXService,
                                          @Value("${dmi.metadata.expiration.seconds:-1}") int metadataExpirationSeconds) {
         DmiDataService d = new DmiDataService(dmiService, dmiCTXService);
 
         if (metadataExpirationSeconds >= 0)
             d.getEntityMetadataService().setCacheExpirationSeconds(metadataExpirationSeconds);
-        
+
         return d;
     }
 }
 ```
+
+> See [Samples](/samples) for this source code
 
 Application Properties:
 
