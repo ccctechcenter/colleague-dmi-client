@@ -1,0 +1,41 @@
+DMI
+1.4
+CTRS
+dev0_rt
+ST
+(token)
+
+979697290ýj1
+18398
+57078
+HOST
+CTRQ
+
+
+18398
+57078
+SCTRS
+9
+0
+
+0
+
+
+
+SCTRS.END
+SCTVAL
+10
+0
+1
+1
+A.BALANCE
+224000
+
+
+SCTVAL.END
+----- (this line is not part of the transaction. raw transaction below.) -----
+DMIþ1.4þCTRSþdev0_rtþSTþ(token)þþ979697290ýj1þ18398þ57078þHOSTþCTRQþþþ18398þ57078þSCTRSþ9þ0þþ0þþþþSCTRS.ENDþSCTVALþ10þ0þ1þ1þA.BALANCEþ224000þþþSCTVAL.END
+-----
+Notes:
+1. Line 31 has the name of the parameter response
+2. Line 32 has the value of the parameter response
