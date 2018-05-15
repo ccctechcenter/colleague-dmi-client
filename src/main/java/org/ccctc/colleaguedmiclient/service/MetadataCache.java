@@ -86,7 +86,7 @@ class MetadataCache<T> implements Map<String, T> {
     @Override
     public boolean containsValue(Object value) {
         return cache.entrySet().stream()
-                .anyMatch(i -> (value == null && i == null || (value != null && value.equals(i.getValue()))));
+                .anyMatch(i -> (value == null && i.getValue().getValue() == null || (value != null && value.equals(i.getValue().getValue()))));
     }
 
     @Override
