@@ -19,7 +19,6 @@ import static org.ccctc.colleaguedmiclient.util.StringUtils.parseIntOrNull;
  * @see org.ccctc.colleaguedmiclient.service.DmiCTXService
  * @see CTXRequest
  */
-@Getter
 @ToString
 public class CTXResponse {
 
@@ -29,7 +28,7 @@ public class CTXResponse {
     /**
      * Variables returned by the CTX transaction
      */
-    private final Map<String, String> variables = new HashMap<>();
+    @Getter private final Map<String, String> variables = new HashMap<>();
 
     /**
      * Create a CTX response from a DMI Transaction
@@ -58,13 +57,26 @@ public class CTXResponse {
 
     /**
      * Create a data response from a sub transactions of types SCTRS and SCTVAL
+     * <p>
+     * The SCTRS block is not used
+     * <p>
+     * The format of the SCTVAL is as follows:
+     * 0  = 1
+     * 1  = Number of variables
+     * 2  = Variable #1 Name
+     * 3  = Variable #1 Value
+     * 4  =
+     * 5  =
+     * 6  = Variable #2 Name
+     * 7  = Variable #2 Value
+     * 8  =
+     * 9  =
+     * .. etc - each variable takes up 4 lines with the first two being name and value respectively
      *
-     * @param sctrs SCTRS sub transaction
+     * @param sctrs  SCTRS sub transaction
      * @param sctval SCTVAL sub transaction
      */
-    private CTXResponse(@NonNull DmiSubTransaction sctrs, @NonNull DmiSubTransaction sctval) {
-
-        // @TODO - what do we need sctrs for ?
+    private CTXResponse(DmiSubTransaction sctrs, DmiSubTransaction sctval) {
 
         // SCTVAL contains the values of the output variables
         String[] commands = sctval.getCommands();

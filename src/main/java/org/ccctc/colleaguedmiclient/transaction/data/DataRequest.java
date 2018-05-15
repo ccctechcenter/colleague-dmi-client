@@ -66,7 +66,7 @@ abstract class DataRequest extends DmiTransaction {
                 view,
                 viewName,
                 viewRequestSize,
-                (columns != null) ? String.join(",", columns) : null,
+                columns,
                 criteria,
                 viewType,
                 requesterName,

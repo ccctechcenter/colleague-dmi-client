@@ -7,6 +7,9 @@ import org.ccctc.colleaguedmiclient.transaction.DmiTransaction;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * DMI Request to run a Colleague Transaction
+ */
 public class CTXRequest extends DmiTransaction {
 
     private final static String CTRQ = "CTRQ";
