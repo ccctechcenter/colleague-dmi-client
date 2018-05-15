@@ -41,21 +41,21 @@ public class DmiTransaction {
      *
      * Literal String "DMI"
      */
-    @Getter @Setter private String dmi;
+    @Getter private String dmi;
 
     /**
      * Line 2 of a DMI transaction
      *
      * Version - "1.4" in this implementation
      */
-    @Getter @Setter private String version;
+    @Getter private String version;
 
     /**
      * Line 3 of a DMI transaction
      *
      * Transaction type
      */
-    @Getter @Setter private String transactionType;
+    @Getter private String transactionType;
 
     /**
      * Line 4 of a DMI transaction
@@ -63,14 +63,14 @@ public class DmiTransaction {
      * Account information. The first element is the Colleague Environment / account (for example, production_rt).
      * The second element is the DASH connect string.
      */
-    @Getter @Setter private String[] account;
+    @Getter private String[] account;
 
     /**
      * Line 5 of a DMI transaction
      *
      * Application for this request, such as UT, CORE, ST, etc.
      */
-    @Getter @Setter private String application;
+    @Getter private String application;
 
     /**
      * Line 6 of a DMI transaction
@@ -78,14 +78,14 @@ public class DmiTransaction {
      * Token information returned by a login request or passed for a DMI request that need authorization. The combination
      * of token and the first value of ControlID authenticates a request.
      */
-    @Getter @Setter private String[] token;
+    @Getter private String[] token;
 
     /**
      * Line 7 of a DMI transaction
      *
      * Listener ID
      */
-    @Getter @Setter private String listenerId;
+    @Getter private String listenerId;
 
     /**
      * Line 8 of a DMI transaction
@@ -93,63 +93,63 @@ public class DmiTransaction {
      * Control ID information. The first element is the Control ID (used to authenticate the request). The second
      * element is a unique value for the request (this application generates a random number).
      */
-    @Getter @Setter private String[] controlId;
+    @Getter private String[] controlId;
 
     /**
      * Line 9 of a DMI transaction
      *
      * Date request was created
      */
-    @Getter @Setter private LocalDate createdDate;
+    @Getter private LocalDate createdDate;
 
     /**
      * Line 10 of a DMI transaction
      *
      * Time request was created
      */
-    @Getter @Setter private LocalTime createdTime;
+    @Getter private LocalTime createdTime;
 
     /**
      * Line 11 of a DMI transaction
      *
      * Whom request was created by - HOST for the DMI or "CoreWSý2.0" for this service
      */
-    @Getter @Setter private String createdBy;
+    @Getter private String createdBy;
 
     /**
      * Line 12 of a DMI transaction
      *
      * What transaction the request is in response to
      */
-    @Getter @Setter private String inResponseTo;
+    @Getter private String inResponseTo;
 
     /**
      * Line 13 of a DMI transaction
      *
      * Debug level
      */
-    @Getter @Setter private String debugLevel;
+    @Getter private String debugLevel;
 
     /**
      * Line 14 of a DMI transaction
      *
      * Last processed by
      */
-    @Getter @Setter private String lastProcessedBy;
+    @Getter private String lastProcessedBy;
 
     /**
      * Line 15 of a DMI transaction
      *
      * Last processed date
      */
-    @Getter @Setter private LocalDate lastProcessedDate;
+    @Getter private LocalDate lastProcessedDate;
 
     /**
      * Line 16 of a DMI transaction
      *
      * Last processed time
      */
-    @Getter @Setter private LocalTime lastProcessedTime;
+    @Getter private LocalTime lastProcessedTime;
 
     /**
      * Variable length sub transactions after line 16 of the DMI transaction
