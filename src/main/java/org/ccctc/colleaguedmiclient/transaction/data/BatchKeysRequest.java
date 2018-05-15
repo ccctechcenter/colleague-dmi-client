@@ -1,5 +1,6 @@
 package org.ccctc.colleaguedmiclient.transaction.data;
 
+import lombok.NonNull;
 import org.ccctc.colleaguedmiclient.util.StringUtils;
 
 /**
@@ -21,8 +22,8 @@ public class BatchKeysRequest extends DataRequest {
      * @param columns      Columns
      * @param keys         Keys
      */
-    public BatchKeysRequest(String account, String token, String controlId, String sharedSecret, String viewName,
-                       ViewType viewType, Iterable<String> columns, Iterable<String> keys) {
+    public BatchKeysRequest(@NonNull String account, @NonNull String token, @NonNull String controlId, @NonNull String sharedSecret,
+                            @NonNull String viewName, @NonNull ViewType viewType, Iterable<String> columns, Iterable<String> keys) {
         super(account, token, controlId);
         String colNames = (columns != null) ? String.join(",", columns) : null;
         String criteria = (keys != null) ? String.join(Character.toString(StringUtils.SM), keys) : null;

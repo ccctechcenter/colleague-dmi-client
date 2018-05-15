@@ -34,9 +34,7 @@ abstract class DataRequest extends DmiTransaction {
      * @param columns        Columns (or keys for a SELECT)
      * @param criteria       Criteria
      */
-    void addSubRequest(DataAccessType dataAccessType, String viewName, ViewType viewType,
-                                 String columns, String criteria) {
-
+    void addSubRequest(DataAccessType dataAccessType, String viewName, ViewType viewType, String columns, String criteria) {
         addSubRequest(F, STANDARD, (dataAccessType != null ? dataAccessType.toString() : null), L, VIEW, viewName,
                 "0", columns, criteria, (viewType != null ? viewType.toString() : null), null);
     }
