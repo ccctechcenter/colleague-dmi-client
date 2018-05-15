@@ -16,12 +16,16 @@ class MetadataCacheSpec extends Specification {
         cache.isEmpty() == false
         cache.containsKey("key")
         cache.containsValue("value")
+        cache.containsValue(null) == false
+        cache.containsValue("other key") == false
 
         when:
-        cache.remove("key")
+        def rm = cache.remove("key")
 
         then:
+        rm == "value"
         cache.isEmpty() == true
+        cache.remove("key") == null
 
         when:
         cache.putAll([key: "value"])
@@ -51,6 +55,21 @@ class MetadataCacheSpec extends Specification {
         es.size() == 1
         es[0].key == "key"
         es[0].value == "value"
+
+        when:
+        cache.clear()
+
+        then:
+        cache.size() == 0
+    }
+
+    def "get - expired"() {
+        when:
+        cache.setCacheExpirationSeconds(0)
+        cache.put("key", "value")
+
+        then:
+        cache.get("key") == null
     }
 
     def "removeExpired"() {
