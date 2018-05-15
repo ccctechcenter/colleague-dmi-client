@@ -32,6 +32,9 @@ public class DataResponse {
     private final static String SINGLE = "SINGLE";
     private final static String TUPLE = "TUPLE";
 
+    private final static String F = "F";
+    private final static String STANDARD = "STANDARD";
+
     /**
      * Table name
      */
@@ -82,11 +85,11 @@ public class DataResponse {
         mode = commands[4];
         table = commands[5];
 
-        if (table == null || table.equals(""))
+        if (table == null)
             throw new DmiTransactionException("Malformed response: no table/view specified");
 
-        assert "F".equals(commands[0]);
-        assert "STANDARD".equals(commands[1]);
+        assert F.equals(commands[0]);
+        assert STANDARD.equals(commands[1]);
 
         /*
         Not sure what would trigger an error code here rather than a SERRS sub-transaction instead. Will leave this in

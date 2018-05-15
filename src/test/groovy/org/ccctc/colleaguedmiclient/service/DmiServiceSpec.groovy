@@ -186,7 +186,7 @@ class DmiServiceSpec extends Specification{
         // same stream, which will fail
         def is1 = new ByteArrayInputStream(goodResponse.getBytes("windows-1252"))
         def is2 = new ByteArrayInputStream(goodResponse.getBytes("windows-1252"))
-        def is3 = new ByteArrayInputStream(goodResponse.getBytes("windows-1252"))
+        def is3 = new ByteArrayInputStream(goodResponse2.getBytes("windows-1252"))
 
 
         // two simultaneous calls but login is only performed once and both get the same credentials
