@@ -22,7 +22,6 @@ import static org.ccctc.colleaguedmiclient.util.StringUtils.parseIntOrNull;
  * @see org.ccctc.colleaguedmiclient.service.DmiDataService
  * @see DataRequest
  */
-@Getter
 @ToString
 public class DataResponse {
 
@@ -38,22 +37,22 @@ public class DataResponse {
     /**
      * Table name
      */
-    private final String table;
+    @Getter private final String table;
 
     /**
      * Selection mode (SINGLE or BATCH)
      */
-    private final String mode;
+    @Getter private final String mode;
 
     /**
      * Field data, indexed by field name
      */
-    private final Map<String, String[]> data = new HashMap<>();
+    @Getter private final Map<String, String[]> data = new HashMap<>();
 
     /**
      * Field data, indexed by field order
      */
-    private final List<String> order = new ArrayList<>();
+    @Getter private final List<String> order = new ArrayList<>();
 
     /**
      * Create a data response from a DMI transaction.

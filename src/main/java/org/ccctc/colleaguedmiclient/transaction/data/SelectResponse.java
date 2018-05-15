@@ -19,21 +19,24 @@ import static org.ccctc.colleaguedmiclient.util.StringUtils.parseIntOrNull;
  * @see org.ccctc.colleaguedmiclient.service.DmiDataService
  * @see SelectRequest
  */
-@Getter
 @ToString
 public class SelectResponse {
 
     private final static String SDAFS = "SDAFS";
 
+    private final static String F = "F";
+    private final static String STANDARD = "STANDARD";
+    private final static String SELECT = "SELECT";
+
     /**
      * Table name
      */
-    private final String table;
+    @Getter private final String table;
 
     /**
      * List of keys selected
      */
-    private final String[] keys;
+    @Getter private final String[] keys;
 
     /**
      * Create a select response from a DMI transaction.
@@ -52,13 +55,24 @@ public class SelectResponse {
 
     /**
      * Create a select response from a sub transaction of type SDAFS
+     * <p>
+     * The format is as follows:
+     * 0  = F
+     * 1  = STANDARD
+     * 2  = SELECT or SUBSELECT
+     * 3  = L
+     * 4  = SELECT
+     * 5  = (table name) - start of table block
+     * 6  = size of entire SELECT block starting with line 4 (SELECT) and ending with the end of the response - (table name).END
+     * 7  = first key
+     * 8  = second key
+     * 9  = etc
+     * ...
+     * xx = (table name).END - end of table block
      *
      * @param subTransaction Sub transaction
      */
-    private SelectResponse(@NonNull DmiSubTransaction subTransaction) {
-        if (!SDAFS.equals(subTransaction.getTransactionType()))
-            throw new DmiTransactionException("Unexpected sub transaction type encountered: " + subTransaction.getTransactionType());
-
+    private SelectResponse(DmiSubTransaction subTransaction) {
         String[] commands = subTransaction.getCommands();
 
         if (commands.length < 7)
@@ -66,13 +80,12 @@ public class SelectResponse {
 
         this.table = commands[5];
 
-        if (table == null || table.equals(""))
+        if (table == null)
             throw new DmiTransactionException("Malformed response: no table/view specified");
 
-        assert "F".equals(commands[0]);
-        assert "STANDARD".equals(commands[1]);
-        assert ("SELECT".equals(commands[2]) || "SUBSELECT".equals(commands[2]));
-        assert "SELECT".equals(commands[4]);
+        assert F.equals(commands[0]);
+        assert STANDARD.equals(commands[1]);
+        assert SELECT.equals(commands[4]);
 
         // verify transaction size
         Integer subsetSize = parseIntOrNull(commands[6]);
