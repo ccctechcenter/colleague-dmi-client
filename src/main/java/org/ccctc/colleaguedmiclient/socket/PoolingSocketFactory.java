@@ -150,10 +150,14 @@ public class PoolingSocketFactory implements Closeable {
                 }
             }
 
+            // loop through available sockets, recycle any that are expired
             PooledSocket socket = available.poll();
             while (socket != null) {
-                if (!socket.isClosed() && !socket.isExpired())
+                if (socket.isExpired())
+                    try { socket.recycle(); } catch (IOException ignored) { }
+                else if (!socket.isClosed())
                     break;
+
                 socket = available.poll();
             }
 

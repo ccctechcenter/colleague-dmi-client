@@ -17,18 +17,24 @@ class SocketSpec extends Specification {
         serverSocket.close()
     }
 
-    def "constructor and getters"() {
+    def "getters / setters"() {
         when:
-        def f = new PoolingSocketFactory("localhost", testPort, 1, false, null)
+        def f = new PoolingSocketFactory("localhost", testPort, 1, true, "hostnameoverride")
+        f.setSocketReadTimeoutMs(10000)
+        f.setSocketExpirationMs(9999)
+        f.setPoolTimeoutMs(9998)
+        f.setSocketConnectTimeoutMs(9997)
 
         then:
         f.getHost() == "localhost"
         f.getPort() == testPort
+        f.isSecure() == true
+        f.getHostnameOverride() == "hostnameoverride"
         f.getPoolSize() == 1
-        f.getPoolTimeoutMs() != null
-        f.getSocketConnectTimeoutMs() != null
-        f.getSocketExpirationMs() != null
-        f.getSocketReadTimeoutMs() != null
+        f.getSocketReadTimeoutMs() == 10000
+        f.getSocketExpirationMs() == 9999
+        f.getPoolTimeoutMs() == 9998
+        f.getSocketConnectTimeoutMs() == 9997
     }
 
     def "pool timeout exceeded"() {
@@ -94,8 +100,9 @@ class SocketSpec extends Specification {
 
     def "socket re-used"() {
         setup:
-        def f = new PoolingSocketFactory("localhost", testPort, 1, false, null)
+        def f = new PoolingSocketFactory("localhost", testPort, 5, false, null)
 
+        // one socket is closed, then re-used
         when:
         def s = f.getSocket(false)
         s.close()
@@ -103,6 +110,52 @@ class SocketSpec extends Specification {
 
         then:
         s == s2
+
+        cleanup:
+        f.close()
+    }
+
+    def "force new socket, available socket is recycled"() {
+        setup:
+        def f = new PoolingSocketFactory("localhost", testPort, 5, false, null)
+
+        // one socket is closed, then re-used
+        when:
+        def s = f.getSocket(false)
+        s.close()
+        def s2 = f.getSocket(true)
+
+        then:
+        s.isClosed()
+        s != s2
+        f.available == 0
+        f.used == 1
+
+        cleanup:
+        f.close()
+    }
+
+    def "one socket expired"() {
+        // in this test, we open two sockets - s3, s4 then close s3 after it has expired and s4 when it has not expired.
+        // s5 should pick up s4 and s3 should be recycled since it has expired.
+
+        setup:
+        def f = new PoolingSocketFactory("localhost", testPort, 5, false, null)
+
+        when:
+        f.setSocketExpirationMs(500)
+        def s3 = f.getSocket(false)
+        sleep(500)
+        def s4 = f.getSocket(false)
+        s3.close()
+        s4.close()
+        def s5 = f.getSocket(false)
+
+        then:
+        s3.isClosed()
+        s4 == s5
+        f.getAvailable() == 0
+        f.getUsed() == 1
 
         cleanup:
         f.close()

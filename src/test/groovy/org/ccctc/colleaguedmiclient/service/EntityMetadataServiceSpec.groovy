@@ -78,6 +78,24 @@ class EntityMetadataServiceSpec extends Specification {
         e["LAST.NAME"].fieldPlacement == 5
     }
 
+    def "get - empty map"() {
+        setup:
+        def d = Mock(DmiCTXService)
+        def m = new EntityMetadataService(d)
+        def response = ["TV.ENTITY.TYPE": "TYPE"]
+
+        when:
+        def r = m.get("CORE", "PERSON")
+
+        then:
+        1 * d.executeRaw(*_) >> response
+        0 * _
+        r.getEntityType() == "TYPE"
+        r.getEntries().size() == 0
+        r.getOrderedEntries().size() == 0
+
+    }
+
     def "get - caching"() {
         setup:
         def d = Mock(DmiCTXService)

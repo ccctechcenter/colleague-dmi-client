@@ -105,7 +105,7 @@ class MetadataCache<T> implements Map<String, T> {
 
     @Override
     public T put(String key, T value) {
-        Entry<T> entry = new Entry<>(key, value, LocalDateTime.now().plusSeconds(cacheExpirationSeconds));
+        Entry<T> entry = new Entry<>(value, LocalDateTime.now().plusSeconds(cacheExpirationSeconds));
         cache.put(key, entry);
         return value;
     }
@@ -167,11 +167,6 @@ class MetadataCache<T> implements Map<String, T> {
     @AllArgsConstructor
     private static class Entry<T> {
         /**
-         * Key of the entry in the format application + "*" + entry name. Example: CORE*PERSON.
-         */
-        private final String key;
-
-        /**
          * Value of the entry
          */
         @Getter private final T value;
@@ -179,7 +174,7 @@ class MetadataCache<T> implements Map<String, T> {
         /**
          * Expiration date and time of the entry
          */
-        @Getter private final LocalDateTime expirationDateTime;
+        private final LocalDateTime expirationDateTime;
 
         boolean isExpired() {
             return !expirationDateTime.isAfter(LocalDateTime.now());
