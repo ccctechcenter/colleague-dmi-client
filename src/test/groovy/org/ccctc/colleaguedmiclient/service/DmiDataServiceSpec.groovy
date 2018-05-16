@@ -65,7 +65,7 @@ class DmiDataServiceSpec extends Specification {
         def qValue = ["q1", "q2"] as String[]
         def xValue = null
 
-        def response = new TestDmiTransaction("account", "DAFS", "appl", "token", "controlid")
+        def response = new DmiTransaction("account", "DAFS", "appl", "token", "controlid")
         response.setInResponseTo("SDAFQ")
         response.addSubTransaction(new DmiSubTransaction("SDAFS", 0, [
                 "F",
@@ -117,7 +117,7 @@ class DmiDataServiceSpec extends Specification {
 
     def "singleKey - not found"() {
         setup:
-        def response = new TestDmiTransaction("account", "DAFS", "appl", "token", "controlid")
+        def response = new DmiTransaction("account", "DAFS", "appl", "token", "controlid")
         response.setInResponseTo("SDAFQ")
         response.addSubTransaction(new DmiSubTransaction("SDAFS", 0, [
                 "F",
@@ -145,7 +145,7 @@ class DmiDataServiceSpec extends Specification {
 
     def "singleKey missing metadata, bad field name"() {
         setup:
-        def response = new TestDmiTransaction("account", "DAFS", "appl", "token", "controlid")
+        def response = new DmiTransaction("account", "DAFS", "appl", "token", "controlid")
         response.setInResponseTo("SDAFQ")
         response.addSubTransaction(new DmiSubTransaction("SDAFS", 0, [
                 "F",
@@ -197,7 +197,7 @@ class DmiDataServiceSpec extends Specification {
 
         def metadata = new EntityMetadata("VIEW", null, cdds.collectEntries { i -> [i.name, i]}, cdds as CddEntry[])
 
-        def response = new TestDmiTransaction("account", "DAFS", "appl", "token", "controlid")
+        def response = new DmiTransaction("account", "DAFS", "appl", "token", "controlid")
         response.setInResponseTo("SDAFQ")
         response.addSubTransaction(new DmiSubTransaction("SDAFS", 0, [
                 "F",
@@ -231,7 +231,7 @@ class DmiDataServiceSpec extends Specification {
                 "VIEW.END"
         ] as String[]))
 
-        def selectResponse = new TestDmiTransaction("account", "DAFS", "appl", "token", "controlid")
+        def selectResponse = new DmiTransaction("account", "DAFS", "appl", "token", "controlid")
         selectResponse.setInResponseTo("SDAFQ")
         selectResponse.addSubTransaction(new DmiSubTransaction("SDAFS", 0, [
                 "F",
@@ -292,7 +292,7 @@ class DmiDataServiceSpec extends Specification {
         def metadata = new EntityMetadata("VIEW", null, cdds.collectEntries { i -> [i.name, i]}, cdds as CddEntry[])
 
         // first 1000 records
-        def response1 = new TestDmiTransaction("account", "DAFS", "appl", "token", "controlid")
+        def response1 = new DmiTransaction("account", "DAFS", "appl", "token", "controlid")
         response1.setInResponseTo("SDAFQ")
 
         def commands1 = [
@@ -318,7 +318,7 @@ class DmiDataServiceSpec extends Specification {
         response1.addSubTransaction(new DmiSubTransaction("SDAFS", 0, commands1 as String[]))
 
         // second batch of records
-        def response2 = new TestDmiTransaction("account", "DAFS", "appl", "token", "controlid")
+        def response2 = new DmiTransaction("account", "DAFS", "appl", "token", "controlid")
         response2.setInResponseTo("SDAFQ")
 
         def commands2 = [
@@ -371,7 +371,7 @@ class DmiDataServiceSpec extends Specification {
 
     def "selectKeys - all"() {
         setup:
-        def selectResponse = new TestDmiTransaction("account", "DAFS", "appl", "token", "controlid")
+        def selectResponse = new DmiTransaction("account", "DAFS", "appl", "token", "controlid")
         selectResponse.setInResponseTo("SDAFQ")
         selectResponse.addSubTransaction(new DmiSubTransaction("SDAFS", 0, [
                 "F",
@@ -473,18 +473,5 @@ class DmiDataServiceSpec extends Specification {
         when: dmiDataService.selectKeys(null, null)
         then: thrown NullPointerException
     }
-
-
-    // dmi transaction for testing - exposes protected / private methods for construction in a test
-    class TestDmiTransaction extends DmiTransaction {
-        TestDmiTransaction(String account, String transactionType, String application, String token, String controlId) {
-            super(account, transactionType, application, token, controlId)
-        }
-
-        @Override
-        void addSubTransaction(DmiSubTransaction subTransaction) {
-            super.addSubTransaction(subTransaction)
-        }
-    }
+    
 }
-
