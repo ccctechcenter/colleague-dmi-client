@@ -5,12 +5,12 @@ import spock.lang.Specification
 
 class SocketSpec extends Specification {
 
-    static int testPort = 8488
-    static int testPort2 = 8489
-    static ServerSocket
+    static int testPort
+    static serverSocket
 
     def setupSpec() {
-        serverSocket = new ServerSocket(testPort)
+        serverSocket = new ServerSocket(0)
+        testPort = serverSocket.getLocalPort()
     }
 
     def cleanupSpec() {
@@ -56,6 +56,12 @@ class SocketSpec extends Specification {
 
     def "socket timeout exceeded"() {
         setup:
+
+        // find a free port, open and close it to get a port number we can use for testing that will (hopefully!!) close
+        def serverSocket2 = new ServerSocket(0)
+        int testPort2 = serverSocket2.getLocalPort()
+        serverSocket2.close()
+
         def f = new PoolingSocketFactory("localhost", testPort2, 1, false, null)
         f.setSocketConnectTimeoutMs(5)
 
