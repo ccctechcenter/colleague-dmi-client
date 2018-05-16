@@ -27,17 +27,17 @@ pipeline {
                     if (env.BRANCH_NAME == "develop" && artifact_version =~ /SNAPSHOT/) { //publish a snapshot version if we're on develop branch
                         build_action = "Nexus Publish"
                         nexusArtifactUploader artifacts: [
-                                [artifactId: 'colleague-dmi-client', classifier: '', file: "target/colleague-dmi-client-${artifact_version}.jar", type: 'jar'],
-                                [artifactId: 'colleague-dmi-client', classifier: '', file: "target/colleague-dmi-client-${artifact_version}-javadoc.jar", type: 'jar'],
-                                [artifactId: 'colleague-dmi-client', classifier: '', file: "target/colleague-dmi-client-${artifact_version}-sources.jar", type: 'jar']
+                                [artifactId: 'colleague-dmi-client', classifier: 'binary', file: "target/colleague-dmi-client-${artifact_version}.jar", type: 'jar'],
+                                [artifactId: 'colleague-dmi-client', classifier: 'javadoc', file: "target/colleague-dmi-client-${artifact_version}-javadoc.jar", type: 'jar'],
+                                [artifactId: 'colleague-dmi-client', classifier: 'sources', file: "target/colleague-dmi-client-${artifact_version}-sources.jar", type: 'jar']
                         ], credentialsId: 'nexus-deploy-user', groupId: 'org.ccctech', nexusUrl: 'nexus.ccctechcenter.org', nexusVersion: 'nexus2', protocol: 'http', repository: "snapshots", version: "${artifact_version}"
                     }
                     if (env.BRANCH_NAME == "master" && !(artifact_version =~ /SNAPSHOT/)) { //publish to releases repo if we're on master, and we're not using a snapshot version
                         build_action = "Nexus Publish"
                         nexusArtifactUploader artifacts: [
-                                [artifactId: 'colleague-dmi-client', classifier: '', file: "target/colleague-dmi-client-${artifact_version}.jar", type: 'jar'],
-                                [artifactId: 'colleague-dmi-client', classifier: '', file: "target/colleague-dmi-client-${artifact_version}-javadoc.jar", type: 'jar'],
-                                [artifactId: 'colleague-dmi-client', classifier: '', file: "target/colleague-dmi-client-${artifact_version}-sources.jar", type: 'jar']
+                                [artifactId: 'colleague-dmi-client', classifier: 'binary', file: "target/colleague-dmi-client-${artifact_version}.jar", type: 'jar'],
+                                [artifactId: 'colleague-dmi-client', classifier: 'javadoc', file: "target/colleague-dmi-client-${artifact_version}-javadoc.jar", type: 'jar'],
+                                [artifactId: 'colleague-dmi-client', classifier: 'sources', file: "target/colleague-dmi-client-${artifact_version}-sources.jar", type: 'jar']
                         ], credentialsId: 'nexus-deploy-user', groupId: 'org.ccctech', nexusUrl: 'nexus.ccctechcenter.org', nexusVersion: 'nexus2', protocol: 'http', repository: "releases", version: "${artifact_version}"
                     }
                 }
