@@ -56,13 +56,13 @@ class SocketSpec extends Specification {
 
     def "socket timeout exceeded"() {
         setup:
+        // create a server socket with a backlog of 1 and fill it to simulate a connection timeout
+        def ss = new ServerSocket(0, 1)
+        def p = ss.getLocalPort()
+        def s = new Socket()
+        s.connect(ss.getLocalSocketAddress())
 
-        // find a free port, open and close it to get a port number we can use for testing that will (hopefully!!) close
-        def serverSocket2 = new ServerSocket(0)
-        int testPort2 = serverSocket2.getLocalPort()
-        serverSocket2.close()
-
-        def f = new PoolingSocketFactory("localhost", testPort2, 1, false, null)
+        def f = new PoolingSocketFactory("localhost", p, 1, false, null)
         f.setSocketConnectTimeoutMs(5)
 
         when:
@@ -73,6 +73,8 @@ class SocketSpec extends Specification {
         i.getMessage().contains("Timeout")
 
         cleanup:
+        ss.close()
+        s.close()
         f.close()
     }
 
