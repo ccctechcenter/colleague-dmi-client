@@ -151,9 +151,9 @@ class SocketSpec extends Specification {
         def f = new PoolingSocketFactory(testHost, testPort, 5, false, null)
 
         when:
-        f.setSocketExpirationMs(500)
+        f.setSocketExpirationMs(0)
         def s3 = f.getSocket(false)
-        sleep(500)
+        f.setSocketExpirationMs(10000)
         def s4 = f.getSocket(false)
         s3.close()
         s4.close()
