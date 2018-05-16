@@ -13,7 +13,7 @@ import static org.ccctc.colleaguedmiclient.util.StringUtils.parseIntOrNull;
 
 /**
  * Response from a DMI transaction that requested a key select. This should be instantiated by calling
- * @{code fromDmiTransaction()} with the DMI response from a @{code SelectRequest}.
+ * {@code fromDmiTransaction()} with the DMI response from a {@code SelectRequest}.
  *
  * @see org.ccctc.colleaguedmiclient.service.DmiDataService
  * @see SelectRequest

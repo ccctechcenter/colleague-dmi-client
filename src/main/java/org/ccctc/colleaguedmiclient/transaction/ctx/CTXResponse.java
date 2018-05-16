@@ -13,7 +13,7 @@ import static org.ccctc.colleaguedmiclient.util.StringUtils.parseIntOrNull;
 
 /**
  * Response from a DMI transaction that requested to run a Colleague Transaction. This should be instantiated by
- * calling @{code fromDmiTransaction()} with the DMI response from a @{code CTXRequest}.
+ * calling {@code fromDmiTransaction()} with the DMI response from a {@code CTXRequest}.
  *
  * @see org.ccctc.colleaguedmiclient.service.DmiCTXService
  * @see CTXRequest

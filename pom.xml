@@ -12,9 +12,9 @@
         <java.version>1.8</java.version>
         <groovy.version>2.4.15</groovy.version>
         <lombok.version>1.16.20</lombok.version>
-        <lombok.encoding>UTF-8</lombok.encoding>
         <!-- enable trace logging, so we get the full detail on unit tests -->
         <argLine>-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.SimpleLog -Dorg.apache.commons.logging.simplelog.defaultlog=trace</argLine>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <build>
@@ -60,10 +60,6 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <!-- this is needed as there are some UTF-8 characters in the unit tests from the DMI -->
-                    <sourceEncoding>UTF-8</sourceEncoding>
-                </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>org.codehaus.groovy</groupId>
@@ -162,7 +158,6 @@
                             <formatPreferences>
                                 <javaLangAsFQN>skip</javaLangAsFQN>
                             </formatPreferences>
-                            <verbose>true</verbose>
                             <addOutputDirectory>false</addOutputDirectory>
                             <sourceDirectory>src/main/java</sourceDirectory>
                         </configuration>
@@ -178,7 +173,8 @@
                 <configuration>
                     <defaultVersion>${project.version}</defaultVersion>
                     <sourcepath>${project.build.directory}/generated-sources/delombok</sourcepath>
-                    <verbose>true</verbose>
+                    <!-- suppress doclint errors on missing tags (most of our getters dont have an @return statement for example) -->
+                    <doclint>all,-missing</doclint>
                 </configuration>
                 <executions>
                     <!-- generate javadocs in package phase -->

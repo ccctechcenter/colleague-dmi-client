@@ -223,7 +223,7 @@ public class DmiService implements Closeable {
      * <p>
      * Error handling is done as part of the request and depending on the error a re-login
      * or retry of the transaction may be performed to see if it can complete the request.
-     * If it cannot complete the request, it will throw a @{code DmiServiceException}.
+     * If it cannot complete the request, it will throw a {@code DmiServiceException}.
      *
      * @param transaction DMI Transaction
      * @return Response

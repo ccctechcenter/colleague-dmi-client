@@ -16,8 +16,8 @@ import java.util.Map;
 import static org.ccctc.colleaguedmiclient.util.StringUtils.parseIntOrNull;
 
 /**
- * Response from a DMI transaction that requested data. This should be instantiated by calling @{code fromDmiTransaction()}
- * with the DMI response from a @{code DataRequest}.
+ * Response from a DMI transaction that requested data. This should be instantiated by calling {@code fromDmiTransaction()}
+ * with the DMI response from a {@code DataRequest}.
  *
  * @see org.ccctc.colleaguedmiclient.service.DmiDataService
  * @see DataRequest
