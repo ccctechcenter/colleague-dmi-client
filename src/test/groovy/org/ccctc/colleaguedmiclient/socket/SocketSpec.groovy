@@ -58,13 +58,14 @@ class SocketSpec extends Specification {
 
     def "socket connection refused"() {
         setup:
-        // create a server socket with a backlog of 1 and fill it to simulate a connection refused
-        def ss = new ServerSocket(0, 1)
+        // create a server socket to find an open port - then close it so the port will no longer accept connections
+        // (should trigger a connection refused as that port is not listening)
+        def ss = new ServerSocket(0)
+        def h = ss.getInetAddress().getHostAddress()
         def p = ss.getLocalPort()
-        def s = new Socket()
-        s.connect(ss.getLocalSocketAddress())
+        ss.close()
 
-        def f = new PoolingSocketFactory(ss.getInetAddress().getHostAddress(), p, 1, false, null)
+        def f = new PoolingSocketFactory(h, p, 1, false, null)
 
         when:
         f.getSocket(false)
@@ -74,8 +75,6 @@ class SocketSpec extends Specification {
         i.getMessage().contains("refused")
 
         cleanup:
-        ss.close()
-        s.close()
         f.close()
     }
 
