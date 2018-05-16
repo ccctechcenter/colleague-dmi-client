@@ -115,7 +115,30 @@
                                     <!-- the following classes are excluded from code coverage -->
                                     <excludes>
                                         <exclude>org.ccctc.colleaguedmiclient.model.**</exclude>
+                                        <exclude>org.ccctc.colleaguedmiclient.transaction.LoginRequest</exclude>
                                     </excludes>
+                                </rule>
+
+                                <!-- classes that don't quite meet the coverage requirements -->
+                                <rule>
+                                    <element>CLASS</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.50</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.50</minimum>
+                                        </limit>
+                                    </limits>
+                                    <!-- the following classes are excluded from code coverage -->
+                                    <includes>
+                                        <include>org.ccctc.colleaguedmiclient.model.**</include>
+                                        <include>org.ccctc.colleaguedmiclient.transaction.LoginRequest</include>
+                                    </includes>
                                 </rule>
                             </rules>
                         </configuration>

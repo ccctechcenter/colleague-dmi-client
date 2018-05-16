@@ -1,14 +1,17 @@
 package org.ccctc.colleaguedmiclient.model;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 /**
  * Key / value pair
  * @param <K> Key Type
  * @param <V> Value Type
  */
-@Data
+@Getter
+@AllArgsConstructor
 public class KeyValuePair<K, V> {
+
     /**
      * Key
      */

@@ -85,7 +85,6 @@ class CTXMetadataServiceSpec extends Specification {
         def c = Mock(DmiCTXService)
         def d = new CTXMetadataService(c)
 
-        // no response from DMI
         when:
         def m = d.get("appl", "TRANSACTION.NAME")
 
@@ -93,12 +92,23 @@ class CTXMetadataServiceSpec extends Specification {
         1 * c.executeRaw(*_) >> [
                 "TV.ELEMENT.NAME": "E1" + VM + "E2",
                 "TV.ELEMENT.REQUIRED" : "Y" + VM + "N",
+                "TV.ELEMENT.CONV" : "" + VM + "D4/",
+                "TV.ELEMENT.SIZE" : "1" + VM + "2",
+                "TV.ELEMENT.IS.BOOL" : "N" + VM + "N",
                 "TV.ASSOC.NAME" : "A1" + VM + "A2",
                 "TV.ASSOC.MEMBERS" : "V1,V2" + VM + "V3,V4",
                 "TV.VAR.NAME": "D1" + VM  + "V1" + VM + "V2" + VM + "V3" + VM + "V4"]
         0 * _
         m.elements[0].elementName == "E1"
         m.elements[1].elementName == "E2"
+        m.elements[0].elementRequired == "Y"
+        m.elements[1].elementRequired == "N"
+        m.elements[0].elementConv == null
+        m.elements[1].elementConv == "D4/"
+        m.elements[0].elementSize == "1"
+        m.elements[1].elementSize == "2"
+        m.elements[0].elementIsBool == "N"
+        m.elements[1].elementIsBool == "N"
         m.associations[0].assocName == "A1"
         m.associations[0].assocMembers == ["V1", "V2"]
         m.associations[1].assocName == "A2"

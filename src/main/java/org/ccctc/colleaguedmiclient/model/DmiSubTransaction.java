@@ -1,12 +1,15 @@
 package org.ccctc.colleaguedmiclient.model;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 /**
  * Sub transaction of a DMI transaction
  */
-@Data
+@Getter
+@AllArgsConstructor
 public class DmiSubTransaction {
+
     /**
      * Transaction type
      */

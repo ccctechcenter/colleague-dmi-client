@@ -1,5 +1,6 @@
 package org.ccctc.colleaguedmiclient.transaction.data;
 
+import lombok.NonNull;
 import org.ccctc.colleaguedmiclient.model.DmiSubTransaction;
 import org.ccctc.colleaguedmiclient.transaction.DmiTransaction;
 
@@ -21,7 +22,7 @@ abstract class DataRequest extends DmiTransaction {
     private static final String F = "F";
     private static final String L = "L";
 
-    DataRequest(String account, String token, String controlId) {
+    DataRequest(@NonNull String account, String token, String controlId) {
         super(account, DAFQ, "UT", token, controlId);
     }
 

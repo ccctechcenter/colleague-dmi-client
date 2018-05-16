@@ -1,7 +1,7 @@
 package org.ccctc.colleaguedmiclient.model;
 
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 
 /**
  * Metadata about associations in a Colleague Transaction (CTX). This data comes from the Colleague Transaction
@@ -16,14 +16,33 @@ import lombok.Data;
  * them, we are saying that first name #1 should be grouped with last name #1, first name #2 should be grouped with last
  * name #2, etc.
  */
-@Data
+@Getter
 @Builder
 public class CTXAssociation {
 
+    /**
+     * Association name
+     */
     private final String assocName;
+
+    /**
+     * Alias of association
+     */
     private final String assocAliasName;
+
+    /**
+     * Range
+     */
     private final String assocRange;
+
+    /**
+     * Type
+     */
     private final String assocType;
+
+    /**
+     * List of members
+     */
     private final String[] assocMembers;
 
 }

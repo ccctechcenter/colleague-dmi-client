@@ -1,14 +1,17 @@
 package org.ccctc.colleaguedmiclient.model;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 import java.util.Map;
 
 /**
  * Metadata for a Colleague Entity
  */
-@Data
+@Getter
+@AllArgsConstructor
 public class EntityMetadata {
+
     /**
      * Entity type
      */

@@ -1,12 +1,15 @@
 package org.ccctc.colleaguedmiclient.model;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 /**
  * CDD Entry with associated Java type, array, and numeric scale.
  */
-@Data
+@Getter
+@AllArgsConstructor
 public class CddEntryType {
+
     /**
      * CDD Entry
      */

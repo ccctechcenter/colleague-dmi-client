@@ -1,12 +1,12 @@
 package org.ccctc.colleaguedmiclient.model;
 
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 
 /**
  * CDD (common data dictionary) entry from Colleague. This represents information about a single data element in Colleague.
  */
-@Data
+@Getter
 @Builder
 public class CddEntry {
 

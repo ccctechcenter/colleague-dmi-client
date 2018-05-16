@@ -1,6 +1,7 @@
 package org.ccctc.colleaguedmiclient.model;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 import java.util.List;
 import java.util.Map;
@@ -8,8 +9,10 @@ import java.util.Map;
 /**
  * Result from a CTX Transaction
  */
-@Data
+@Getter
+@AllArgsConstructor
 public class CTXData {
+
     /**
      * Variables returned from the CTX. Will include all variables, even those that are part of an association.
      */

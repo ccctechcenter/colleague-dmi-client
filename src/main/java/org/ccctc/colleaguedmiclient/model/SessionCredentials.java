@@ -1,14 +1,17 @@
 package org.ccctc.colleaguedmiclient.model;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
 
 /**
  * DMI Session Credentials
  */
-@Data
+@Getter
+@AllArgsConstructor
 public class SessionCredentials {
+
     /**
      * Token
      */
