@@ -1,23 +1,21 @@
 package org.ccctc.colleaguedmiclient.socket
 
 import groovyx.gpars.GParsPool
-import org.spockframework.util.NotThreadSafe
 import spock.lang.Specification
 
-@NotThreadSafe
 class SocketSpec extends Specification {
 
-    static String testHost
-    static int testPort
-    static serverSocket
+    String testHost
+    int testPort
+    ServerSocket serverSocket
 
-    def setupSpec() {
+    def setup() {
         serverSocket = new ServerSocket(0)
         testPort = serverSocket.getLocalPort()
         testHost = serverSocket.getInetAddress().getHostAddress()
     }
 
-    def cleanupSpec() {
+    def cleanup() {
         serverSocket.close()
     }
 
@@ -146,6 +144,8 @@ class SocketSpec extends Specification {
     }
 
     def "one socket expired"() {
+        def s3, s4, s5
+
         // in this test, we open two sockets - s3, s4 then close s3 after it has expired and s4 when it has not expired.
         // s5 should pick up s4 and s3 should be recycled since it has expired.
 
@@ -153,19 +153,33 @@ class SocketSpec extends Specification {
         def f = new PoolingSocketFactory(testHost, testPort, 5, false, null)
 
         when:
-        f.setSocketExpirationMs(0)
-        def s3 = f.getSocket(false)
-        f.setSocketExpirationMs(10000)
-        def s4 = f.getSocket(false)
+        f.setSocketExpirationMs(100)
+        s3 = f.getSocket(false)
+        f.setSocketExpirationMs(100000)
+        s4 = f.getSocket(false)
+
+        assert f.used == 2
+        assert f.available == 0
+
+        // close s3 and s4 - sleep between closes to ensure s3 is released first
         s3.close()
+        sleep(100)
         s4.close()
-        def s5 = f.getSocket(false)
+
+        assert f.used == 0
+        assert f.available == 2
+
+        while (!s3.isExpired())
+            sleep(100)
+
+        // this should recycle s3 (since its expired) and pick up the available socket originally assigned to s4
+        s5 = f.getSocket(false)
 
         then:
         s3.isClosed()
         s4 == s5
-        f.getAvailable() == 0
-        f.getUsed() == 1
+        f.available == 0
+        f.used == 1
 
         cleanup:
         f.close()
