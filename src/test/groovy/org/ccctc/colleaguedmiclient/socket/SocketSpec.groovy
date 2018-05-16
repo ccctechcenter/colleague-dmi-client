@@ -1,8 +1,10 @@
 package org.ccctc.colleaguedmiclient.socket
 
 import groovyx.gpars.GParsPool
+import org.spockframework.util.NotThreadSafe
 import spock.lang.Specification
 
+@NotThreadSafe
 class SocketSpec extends Specification {
 
     static String testHost
