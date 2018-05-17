@@ -194,7 +194,7 @@ dmi.host.name.override=
 dmi.shared.secret=shared-secret
 dmi.pool.size=10
 dmi.authorization.expiration.seconds=14400
-dmi.max.transaction.retry=3
+dmi.max.transaction.retry=1
 dmi.metadata.cache.seconds=86400
 ```
 
@@ -315,7 +315,7 @@ __Pattern Matching__
 
 The `LIKE` and `UNLIKE` operators allow for condition matching. Three dots (`...`) are used to specify a wildcard. Example:
 
-    SELECT PERSON WITH LAST.NAME LIKE 'Smith...' BY.DSND ID
+    SELECT PERSON WITH LAST.NAME LIKE 'Smith...' BY FIRST.NAME LAST.NAME
 
 There are other types of pattern matching you can perform, like a simplified regex. See the UniQuery reference for more
 information.
@@ -337,16 +337,16 @@ __Reference__
 |:----------|:---------|
 |LIKE, UNLIKE | Pattern matching |
 |GT, \> | Greater than |
-|LT, \< | Less than |
+|LT, < | Less than |
 |GE, \>= | Greater than or equal |
-|LE, \<= | Less than or equal |
+|LE, <= | Less than or equal |
 |EQ, = | Equal to |
 |NE, # | Not equal to |
 
 |Ordering|Definition|
 |:-------|:---------|
-|BY | Order the results by a field in ascending order|
-|BY.DSND | Order the results by a field in descending order |
+|BY | Order the results by one or more fields in ascending order|
+|BY.DSND | Order the results by one or more fields in descending order |
 
 
 |Other Keywords|Definition|
@@ -355,9 +355,9 @@ __Reference__
 |SAVING UNIQUE | Same as above, but unduplicated |
 
 
-##### Examples #####
+### Examples ###
 
-__Traverse Pointers with SAVING__
+#### Traverse Pointers with SAVING ####
 
 UniData is a hierarchical database model and is all about pointers. To get from one table to another, we need to traverse
 those pointers. `SAVING` can be used to traverse the pointers without having to read each record. For example, if we know
@@ -371,12 +371,12 @@ first. We can do this like so:
 
 Notes:
 
-1. @ID is a synonym for the primary key of the table
+1. \@ID is a synonym for the primary key of the table
 2. STC.STATUS.ACTION1 is a computed column (yes you can use those in selection criteria)
 3. Specifying the values "1" "2" in that fashion implies an "OR", ie STC.STATUS.ACTION1 can be a 1 or a 2. In Colleague a 1
    or 2 for the current STC.STATUS means the enrollment was not dropped, deleted or cancelled.
 
-__To Parenthesis or not Parenthesis__
+#### To Parenthesis or not Parenthesis ####
 
 Parenthesis are supported by UniQuery, but you can also chain WITH statements together to get a similar result. The
 following two statements are equivalent:
