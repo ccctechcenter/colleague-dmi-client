@@ -113,7 +113,7 @@ __DmiService__
 
 1. `authorizationExpirationSeconds` - Authorization expiration. Defaults to 4 hours. When authorization expires, 
    the DMI Service will request new credentials via a login request.
-2. `maxDmiTransactionRetry` - Maximum attempts to sending / receiving a DMI Transaction. Default is 2.
+2. `maxDmiTransactionRetry` - Maximum retries if sending / receiving a DMI Transaction fails. Default is 1.
 
 __EntityMetadataService and CTXMetadataService__
 
