@@ -1,14 +1,22 @@
 # Colleague DMI Client #
 
+The Colleague DMI Client is a java library that handles communicatoins with the Colleague DMI
+
+## Release History ##
+
+__1.0.2__
+
+* Initial release
+
 ## Compilation ##
     
     mvn clean test     - run unit tests and code coverage
     mvn clean compile  - compile
-    mvn clean package  - package (jar) and create javadoc
+    mvn clean package  - package (jar) and create javadoc + sources
 
-## Nexus ##
+## Nexus Repository and Jenkins Integration ##
 
-Snapshots of this project are stored in nexus.ccctechcenter.org
+Jenkins is used to test, build and publish snaphots and releases to the nexus.ccctechcenter.org repository. 
 
 ## What is the DMI? ##
 
@@ -31,12 +39,42 @@ in Colleague are separate, so one request might go to the database, one might go
     * Select primary keys from a table based on selection criteria and/or limiting keys 
     * Run a Colleague Transaction (execute code in the application)
   
-
 ## Adding the Colleague DMI Client to your Project ##
 
-#### Maven Dependency ####
+Snapshots of this project are stored in nexus.ccctechcenter.org. See 
+https://cccnext.jira.com/wiki/spaces/CE/pages/79921694/Nexus for instructions on configuring your local
+Maven environment to use this repository.
 
-@TODO - from nexus
+### Maven Dependencies ###
+
+__Step 1: Add the nexus.ccctechcenter.org repository__
+
+```xml
+<repositories>
+    <repository>
+        <id>nexus.ccctechcenter.org</id>
+        <name>ccctech</name>
+        <url>http://nexus.ccctechcenter.org/content/groups/public</url>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </repository>
+</repositories>    
+```
+
+__Step 2: Add the dependency__
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>org.ccctech</groupId>
+        <artifactId>colleague-dmi-client</artifactId>
+        <version>(current version)</version>
+    </dependency>
+</dependencies>
+```
+
+### Configuration ###
 
 #### Create the Services Directly ####
 
@@ -61,8 +99,7 @@ try (DmiService dmiService = new DmiService(account, username, password, ipAddre
 ```
 
 > See [Samples](/samples) for this source code
-
-
+>
 > Important note: `DmiService` implements `Closeable`. It's important to wrap it in a try-with-resources statement like
 > above or a try-finally block (calling `close()` in `finally`), to ensure the DMI Service is closed. This will ensure
 > all open sockets are closed when the service is closed. Better yet, use Spring Boot (below) and it should
@@ -199,9 +236,7 @@ See Appendix A: Data Types
 
 #### Selection Criteria ####
 
-
-@TODO
-
+See Appendix B: Selection Criteria
 
 ### DMI CTX (Colleague Transaction) Service ###
 
@@ -258,7 +293,110 @@ Notes:
   value.
 
 
-## APPENDIX B: The Anatomy of a DMI Transaction ##
+## APPENDIX B: Selection Criteria ##
+
+Select criteria used by the DMI is in UniData format which is standard for Colleague. Some guides are available online,
+including https://docs.rocketsoftware.com/nxt/gateway.dll/RKBnew20/unidata/previous%20versions/v7.2/unidata_uniquerycommandsrefguide_v72.pdf
+which is helpful but also contains a lot of information that does not apply to simple selection criteria. Below is a quick
+reference most useful for this client.
+
+Example:
+
+```
+SELECT PERSON WITH LAST.NAME = 'Smith' BY FIRST.NAME
+└───────────┘ └──────────────────────┘ └───────────┘ 
+    table           criteria             ordering
+``` 
+
+__IMPORTANT!__ methods in this library that accept criteria refer to everything after the table portion of the statement,
+ie for the above the criteria would be `WITH LAST.NAME = 'Smith' BY FIRST.NAME`
+
+__Pattern Matching__
+
+The `LIKE` and `UNLIKE` operators allow for condition matching. Three dots (`...`) are used to specify a wildcard. Example:
+
+    SELECT PERSON WITH LAST.NAME LIKE 'Smith...' BY.DSND ID
+
+There are other types of pattern matching you can perform, like a simplified regex. See the UniQuery reference for more
+information.
+
+> Warning: you may accidentally specify one of these pattern matching forms if you are using numbers
+> in your LIKE statement. To avoid this, enclose the entire LIKE statement in double quotes and any string
+> literals inside in single quotes. Example: `WITH  ZIP LIKE "...'8'..."` - will find zip codes with an 8 in them.
+
+__NOTE:__ It is not possible to do case-insensitive searches (unfortunately) 
+
+__Reference__
+
+|Keywords|Definition|
+|:-------|:---------|
+|WITH | Begins a block of conditional statements|
+|EVERY| Follows WITH and specifies that all values of a multi-valued field must meet the criteria|
+
+|Conditional|Definition|
+|:----------|:---------|
+|LIKE, UNLIKE | Pattern matching |
+|GT, \> | Greater than |
+|LT, \< | Less than |
+|GE, \>= | Greater than or equal |
+|LE, \<= | Less than or equal |
+|EQ, = | Equal to |
+|NE, # | Not equal to |
+
+|Ordering|Definition|
+|:-------|:---------|
+|BY | Order the results by a field in ascending order|
+|BY.DSND | Order the results by a field in descending order |
+
+
+|Other Keywords|Definition|
+|:-----|:---------|
+|SAVING | Used when selecting keys - tells the selection to return a different value than the primary key |
+|SAVING UNIQUE | Same as above, but unduplicated |
+
+
+##### Examples #####
+
+__Traverse Pointers with SAVING__
+
+UniData is a hierarchical database model and is all about pointers. To get from one table to another, we need to traverse
+those pointers. `SAVING` can be used to traverse the pointers without having to read each record. For example, if we know
+a student's ID and want to get data for the `COURSES` they have taken, we need to go from `PERSON.ST` to `STUDENT.ACAD.CRED`
+first. We can do this like so:
+
+1. SelectKeys on `PERSON.ST`, criteria = `WITH @ID = '1234567' SAVING PST.STUDENT.ACAD.CRED`
+2. SelectKeys on `STUDENT.ACAD.CRED` with limiting keys from previous selection, criteria = 
+   `WITH STC.STATUS.ACTION1 = "1" "2" SAVING UNIQUE STC.COURSE`
+3. BatchKeys on `COURSES` with keys from previous selection
+
+Notes:
+
+1. @ID is a synonym for the primary key of the table
+2. STC.STATUS.ACTION1 is a computed column (yes you can use those in selection criteria)
+3. Specifying the values "1" "2" in that fashion implies an "OR", ie STC.STATUS.ACTION1 can be a 1 or a 2. In Colleague a 1
+   or 2 for the current STC.STATUS means the enrollment was not dropped, deleted or cancelled.
+
+__To Parenthesis or not Parenthesis__
+
+Parenthesis are supported by UniQuery, but you can also chain WITH statements together to get a similar result. The
+following two statements are equivalent:
+
+```
+SELECT PERSON 
+WITH LAST.NAME EQ 'Rogers' AND FIRST.NAME EQ 'Jim'
+OR WITH LAST.NAME EQ 'Smith' AND FIRST.NAME EQ 'Aaron'
+OR WITH LAST.NAME EQ 'Stevens' AND FIRST.NAME EQ 'Adam'
+```
+
+```
+SELECT PERSON 
+WITH (LAST.NAME EQ 'Rogers' AND FIRST.NAME EQ 'Jim')
+OR (LAST.NAME EQ 'Smith' AND FIRST.NAME EQ 'Aaron')
+OR (LAST.NAME EQ 'Stevens' AND FIRST.NAME EQ 'Adam')
+```
+
+
+## APPENDIX C: The Anatomy of a DMI Transaction ##
 
 ### Disclaimer ###
 
