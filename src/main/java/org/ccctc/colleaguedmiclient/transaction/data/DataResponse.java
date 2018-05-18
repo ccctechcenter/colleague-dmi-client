@@ -34,6 +34,9 @@ public class DataResponse {
     private final static String F = "F";
     private final static String STANDARD = "STANDARD";
 
+    private final static String ERROR_00011 = "00011";
+    private final static String ERROR_00012 = "00012";
+
     /**
      * Table name
      */
@@ -125,7 +128,7 @@ public class DataResponse {
      * 14 = TUPLE
      * 15 = (record key) - start of record block
      * 16 = number of fields in the response
-     * 17 =
+     * 17 = error code
      * 18 = value for field #1. will be included if columns was requested, or blank if column was not requested.
      * 19 = value for field #2. will be included if columns was requested, or blank if column was not requested.
      * 20 = etc
@@ -166,6 +169,12 @@ public class DataResponse {
             // get header of the record, determine length and start and end read positions
             String tuple = commands[startPos];
             String key = commands[startPos + 1];
+            String errorCode = commands[startPos + 1];
+
+            // handle errors - 00011 is not found, 00012 is read error
+            if (ERROR_00011.equals(errorCode)) continue;
+            if (ERROR_00012.equals(errorCode)) throw new DmiTransactionException("Error reading file - 00012");
+
             int recordLen = parseIntOrNull(commands[startPos + 2]);
             int fieldsStart = startPos + 4;
             int fieldsEnd = fieldsStart + recordLen;
