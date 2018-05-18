@@ -171,15 +171,11 @@ public class DataResponse {
             String key = commands[startPos + 1];
             String errorCode = commands[startPos + 1];
 
-            // not found
+            // handle errors - 00011 is not found, 00012 is read error
             if (ERROR_00011.equals(errorCode)) continue;
             if (ERROR_00012.equals(errorCode)) throw new DmiTransactionException("Error reading file - 00012");
 
             int recordLen = parseIntOrNull(commands[startPos + 2]);
-
-            // no data to return for this record
-            if (recordLen == 0) continue;
-
             int fieldsStart = startPos + 4;
             int fieldsEnd = fieldsStart + recordLen;
 
