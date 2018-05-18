@@ -35,7 +35,7 @@ public class DataResponse {
     private final static String STANDARD = "STANDARD";
 
     private final static String ERROR_00011 = "00011";
-    private final static String ERROR_00012 = "00011";
+    private final static String ERROR_00012 = "00012";
 
     /**
      * Table name
