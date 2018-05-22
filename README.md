@@ -4,9 +4,7 @@ The Colleague DMI Client is a java library that handles communicatoins with the 
 
 ## Release History ##
 
-__1.0.2__
-
-* Initial release
+See [Release Notes](release-notes.md)
 
 ## Compilation ##
     

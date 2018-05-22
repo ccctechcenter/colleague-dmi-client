@@ -217,4 +217,16 @@ public class StringUtils {
 
         return defaultValue;
     }
+
+    /**
+     * Repeat a character x number of times
+     *
+     * @param c Character to repeat
+     * @param x Number of times to repeat
+     * @return String
+     */
+    public static String charRepeat(char c, int x) {
+        if (x == 0) return "";
+        return new String(new char[x]).replace('\0', c);
+    }
 }

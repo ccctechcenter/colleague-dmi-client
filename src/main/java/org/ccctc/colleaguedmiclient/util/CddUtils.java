@@ -9,7 +9,10 @@ import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.util.Date;
 
 public class CddUtils {
 
@@ -32,6 +35,9 @@ public class CddUtils {
 
         Class type = String.class;
         boolean isArray = false;
+        boolean isNumeric = false;
+        boolean isDate = false;
+        boolean isTime = false;
         Integer scale = null;
 
         //
@@ -43,12 +49,16 @@ public class CddUtils {
         if (conversion != null) {
 
             // date
-            if (conversion.charAt(0) == 'D')
+            if (conversion.charAt(0) == 'D') {
+                isDate = true;
                 type = LocalDate.class;
+            }
 
-                // time
-            else if (conversion.length() >= 2 && conversion.substring(0, 2).equals("MT"))
-                type =  LocalTime.class;
+            // time
+            else if (conversion.length() >= 2 && conversion.substring(0, 2).equals("MT")) {
+                isTime = true;
+                type = LocalTime.class;
+            }
 
                 // decimal
             else if (conversion.length() >= 2 && conversion.substring(0, 2).equals("MD")) {
@@ -64,6 +74,8 @@ public class CddUtils {
                 // Note: other format values could follow the number, for example MD0, MD25$, etc  which specify
                 // commas, negatives, currency, etc. Therefore we need to ignore any non-numeric characters.
                 //
+
+                isNumeric = true;
 
                 // attempt to parse the number at position 2 or 3, defaulting back to the already discovered value if conversion fails
                 scale = 0;
@@ -83,7 +95,7 @@ public class CddUtils {
             }
         }
 
-        return new CddEntryType(cddEntry, type, isArray, scale);
+        return new CddEntryType(cddEntry, type, isArray, isNumeric, isDate, isTime, scale);
     }
 
     /**
@@ -118,16 +130,112 @@ public class CddUtils {
     }
 
     /**
-     * Convert a Java type to a String value for serialization to the DMI in the appropriate String format.
+     * Convert a Java type to a String value for serialization to the DMI in the appropriate format for the data type
+     * of the CDD Entry.
+     * <p>
+     * Null values:
+     * Null for any data type is converted to an empty string
+     * <p>
+     * Numeric type handling:
+     * BigDecimal, BigInteger, Double, Float, Integer and Long are supported numeric types. Standard rounding applies on conversion.
+     * All other types are converted to a BigDecimal from their {@code toString()} value. {@code NumberFormatException} is
+     * thrown if conversion fails.
+     * The scale from the destination type is then applied, for example if the scale is 4 and the value is 1.23, the
+     * result will be 12300 (Colleague stores these data types as a numeric string and scale internally).
+     * <p>
+     * Date / time handling:
+     * LocalDate, LocalDateTime, Date - converted to UniData date
+     * LocalTime, LocalDateTime, Date - converted to UniData time
+     * All other types are converted to a Long from their {@code toString()} value. {@code NumberFormatException} is
+     * thrown if conversion fails.
+     * <p>
+     * Other types:
+     * Boolean - converted to Y or N
+     * Any else is converted to a string using {@code toString()}
      *
      * @param value    Java type to convert
      * @param cddEntry CDD Entry
      * @return Converted value
+     * @throws NumberFormatException if conversion to a numeric value fails (including date and time, which are numeric)
      */
-    public static String convertFromValue(Object value, CddEntry cddEntry) {
-        // @TODO
-        return null;
+    public static String convertFromValue(Object value, CddEntry cddEntry) throws NumberFormatException {
+        if (value == null) return "";
+
+        CddEntryType cddEntryType = cddEntryType(cddEntry);
+
+        // numeric type handling
+        if (cddEntryType.isNumeric()) {
+            Integer scale = cddEntryType.getScale();
+            if (scale == null) scale = 0;
+
+            if (value instanceof BigDecimal) {
+                Long v = ((BigDecimal) value).movePointRight(scale).longValue();
+                return v.toString();
+            }
+
+            if (value instanceof Double) {
+                Long v = new BigDecimal((double) value).movePointRight(scale).longValue();
+                return v.toString();
+            }
+
+            if (value instanceof Float) {
+                Long v = new BigDecimal((double) (float)value).movePointRight(scale).longValue();
+                return v.toString();
+            }
+
+            if (value instanceof Integer || value instanceof Long || value instanceof BigInteger) {
+                // for efficiency, Integer, Long and BigInteger conversion should be faster this way than converting to BigDecimal
+                return value.toString() + StringUtils.charRepeat('0', scale);
+            }
+
+            BigDecimal bd = new BigDecimal(value.toString());
+            Long v = bd.movePointRight(scale).longValue();
+            return v.toString();
+        }
+
+        // date / time handling
+        if (cddEntryType.isDate() || cddEntryType.isTime()) {
+            // convert java.util.Date to LocalDate or LocalTime
+            if (value instanceof Date) {
+                if (cddEntryType.isDate())
+                    value = ((Date)value).toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                else
+                    value = ((Date)value).toInstant().atZone(ZoneId.systemDefault()).toLocalTime();
+            }
+
+
+            if (cddEntryType.isDate()) {
+                if (value instanceof LocalDate)
+                    return StringUtils.dateToString((LocalDate)value);
+
+                if (value instanceof LocalDateTime)
+                    return StringUtils.dateToString(((LocalDateTime)value).toLocalDate());
+
+                // date handling for non-LocalDate. any positive or negative number is valid.
+                Long v = Long.parseLong(value.toString());
+                return v.toString();
+            } else {
+                if (value instanceof LocalTime)
+                    return StringUtils.timeToString((LocalTime)value);
+
+                if (value instanceof LocalDateTime)
+                    return StringUtils.timeToString(((LocalDateTime)value).toLocalTime());
+
+                // time handling for non-LocalTime. must be a number between 0 and 86400 (number of seconds in a day).
+                Long v = Long.parseLong(value.toString());
+                if (v < 0 || v > 86400)
+                    throw new NumberFormatException("Time value invalid - must be a number between 0 and 86400");
+                return v.toString();
+            }
+        }
+
+        if (value instanceof Boolean)
+            return ((Boolean)value) ? "Y" : "N";
+
+        // anything else can be converted to a string
+        return value.toString();
     }
+
 
     private static Object convertOneValue(String value, CddEntryType cddEntryType) {
 

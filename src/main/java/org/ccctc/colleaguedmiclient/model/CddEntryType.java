@@ -26,6 +26,21 @@ public class CddEntryType {
     private final boolean isArray;
 
     /**
+     * Is numeric
+     */
+    private final boolean isNumeric;
+
+    /**
+     * Is date
+     */
+    private final boolean isDate;
+
+    /**
+     * Is time
+     */
+    private final boolean isTime;
+
+    /**
      * Scale (for numeric types)
      */
     private final Integer scale;
