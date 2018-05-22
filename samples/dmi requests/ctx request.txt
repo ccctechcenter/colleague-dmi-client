@@ -1,0 +1,53 @@
+DMI
+1.4
+CTRQ
+dev0_rt
+ST
+(token)
+
+979697290ý903842383
+18398
+57078
+CoreWSý2.0
+
+
+
+
+
+SCTRQ
+25
+0
+1
+ST
+X.CCCTC.STUDENT.BALANCE
+SCTVAL
+18
+0
+1
+3
+A.STUDENT
+3410437
+
+
+AL.AR.TYPES
+STAR
+
+
+AL.TERMS
+2015FA
+
+
+SCTVAL.END
+SCTRQ.END
+SDHSQ
+5
+0
+(hash code)
+SDHSQ.END
+----- (this line is not part of the transaction. raw transaction below.) -----
+DMIþ1.4þCTRQþdev0_rtþSTþ(token)þþ979697290ý903842383þ18398þ57078þCoreWSý2.0þþþþþþSCTRQþ25þ0þ1þSTþX.CCCTC.STUDENT.BALANCEþSCTVALþ18þ0þ1þ3þA.STUDENTþ3410437þþþAL.AR.TYPESþSTARþþþAL.TERMSþ2015FAþþþSCTVAL.ENDþSCTRQ.ENDþSDHSQþ5þ0þ(hash code)þSDHSQ.END
+-----
+Notes:
+1. Line 22 has the name of the Colleague Transaction
+2. Lines 28, 32, 36 have the names of the parameters being sent
+3. Lines 29, 33, 38 have the values of the parameters being sent

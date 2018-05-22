@@ -1,0 +1,42 @@
+DMI
+1.4
+DAFQ
+dev0_rt
+UT
+(token)
+
+979697290ý225395366
+18394
+59251
+CoreWSý2.0
+
+
+
+
+
+SDAFQ
+16
+0
+F
+STANDARD
+SELECT
+L
+VIEW
+COURSES
+0
+
+CRS.SUBJECT = 'WLD'
+
+
+COURSES.END
+SDAFQ.END
+SDHSQ
+5
+0
+(hash code)
+SDHSQ.END
+----- (this line is not part of the transaction. raw transaction below.) -----
+DMIþ1.4þDAFQþdev0_rtþUTþ(token)þþ979697290ý225395366þ18394þ59251þCoreWSý2.0þþþþþþSDAFQþ16þ0þFþSTANDARDþSELECTþLþVIEWþCOURSESþ0þþCRS.SUBJECT = 'WLD'þþþCOURSES.ENDþSDAFQ.ENDþSDHSQþ5þ0þ(hash code)þSDHSQ.END
+-----
+Notes:
+1. This is selecting a list of primary keys from the table COURSES where CRS.SUBJECT = 'WLD'

@@ -1,0 +1,43 @@
+DMI
+1.4
+DAFQ
+dev0_rt
+UT
+(token)
+
+979697290ý1506587500
+18394
+57421
+CoreWSý2.0
+
+
+
+
+
+SDAFQ
+16
+0
+F
+STANDARD
+SINGLEKEY
+L
+VIEW
+PERSON
+0
+LAST.NAME
+1234567
+PHYS
+
+PERSON.END
+SDAFQ.END
+SDHSQ
+5
+0
+(hash code)
+SDHSQ.END
+----- (this line is not part of the transaction. raw transaction below.) -----
+DMIþ1.4þDAFQþdev0_rtþUTþ(token)þþ979697290ý1506587500þ18394þ57421þCoreWSý2.0þþþþþþSDAFQþ16þ0þFþSTANDARDþSINGLEKEYþLþVIEWþPERSONþ0þLAST.NAMEþ1234567þPHYSþþPERSON.ENDþSDAFQ.ENDþSDHSQþ5þ0þ(hash code)þSDHSQ.END
+-----
+Notes:
+- This is a SINGLEKEY request for PERSON with ID = 1234567
+- One field is requested: LAST.NAME
