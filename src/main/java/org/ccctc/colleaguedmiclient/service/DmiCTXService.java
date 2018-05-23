@@ -2,6 +2,8 @@ package org.ccctc.colleaguedmiclient.service;
 
 import lombok.Getter;
 import lombok.NonNull;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.ccctc.colleaguedmiclient.model.CTXAssociation;
 import org.ccctc.colleaguedmiclient.model.CTXData;
 import org.ccctc.colleaguedmiclient.model.CTXMetadata;
@@ -32,6 +34,7 @@ import static org.ccctc.colleaguedmiclient.util.StringUtils.parseIntOrNull;
  */
 public class DmiCTXService {
 
+    private final Log log = LogFactory.getLog(DmiCTXService.class);
     private final DmiService dmiService;
 
     /**
@@ -117,8 +120,40 @@ public class DmiCTXService {
         CTXRequest request = new CTXRequest(dmiService.getAccount(), creds.getToken(), creds.getControlId(),
                 dmiService.getSharedSecret(), appl, transactionName, params);
 
+        if (log.isInfoEnabled()) {
+            String p = null;
+            for (KeyValuePair<String, String> kp : params) {
+                if (p == null) p = kp.getKey() + "=" + kp.getValue();
+                else p += ", " + kp.getKey() + "=" + kp.getValue();
+            }
+
+            if (p == null) p = "(none)";
+
+            if (p.length() > 97) p = p.substring(0, 97) + "...";
+
+            log.info("Sending DMI CTX Request.    Transaction = " + transactionName + " (" + appl + ")"
+                    + ", parameters = " + p);
+        }
+
         DmiTransaction dmiResponse = dmiService.send(request);
         CTXResponse ctxResponse = CTXResponse.fromDmiTransaction(dmiResponse);
+
+        if (log.isInfoEnabled()) {
+            String p = null;
+            for (Map.Entry<String, String> e : ctxResponse.getVariables().entrySet()) {
+                if (p == null) p = e.getKey();
+                else p += ", " + e.getKey();
+            }
+
+            if (p == null) p = "(none)";
+
+            if (p.length() > 97) p = p.substring(0, 97) + "...";
+
+            log.info("Received DMI CTX Response.  Transaction = " + transactionName + " (" + appl + ")"
+                    + ", parameters = " + p);
+
+        }
+
         return ctxResponse.getVariables();
     }
 

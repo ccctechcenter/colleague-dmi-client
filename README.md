@@ -192,7 +192,7 @@ dmi.host.name.override=
 dmi.shared.secret=shared-secret
 dmi.pool.size=10
 dmi.authorization.expiration.seconds=14400
-dmi.max.transaction.retry=1
+dmi.max.transaction.retry=2
 dmi.metadata.cache.seconds=86400
 ```
 

@@ -61,10 +61,10 @@ public class DmiService implements Closeable {
     @Getter @Setter private long authorizationExpirationSeconds = 4 * 60 * 60;
 
     /**
-     * Maximum retries sending / receiving a DMI Transaction. Default is 1. This is in addition to the original
-     * attempt, ie a retry of 1 means it will be tried initially then retried once if there is an error.
+     * Maximum retries sending / receiving a DMI Transaction. Default is 2. This is in addition to the original
+     * attempt, ie a retry of 2 means it will be tried initially then retried twice if there is an error.
      */
-    @Getter @Setter private int maxDmiTransactionRetry = 1;
+    @Getter @Setter private int maxDmiTransactionRetry = 2;
 
     /**
      * Pooling socket factory used by this service to send and receive data from the DMI.
