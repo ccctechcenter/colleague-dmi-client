@@ -15,9 +15,121 @@
         <!-- enable trace logging, so we get the full detail on unit tests -->
         <argLine>-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.SimpleLog -Dorg.apache.commons.logging.simplelog.defaultlog=trace</argLine>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <src.dir>${project.basedir}/src/main/java</src.dir>
     </properties>
 
+    <profiles>
+
+        <!-- this profile is used to generate javadoc and sources jar files from the delomboked files rather than the
+             original sources. Run this profile with the process-sources phase after a build to geneerate the javadoc.
+
+             Example:
+             mvn clean package
+             mvn process-sources -Pjavadoc-and-sources
+
+             Steps run:
+             1. run delombok and put "delomboked" sources in target/generated-sources/delombok
+             2. run javadoc on these sources and create a jar
+             3. create a jar of the delomboked sources
+             4. remove the delomboked sources as they confuse IntelliJ with their very presence
+
+             -->
+
+        <profile>
+            <id>javadoc-and-sources</id>
+            <properties>
+                <src.dir>${project.build.directory}/generated-sources/delombok</src.dir>
+            </properties>
+            <build>
+                <plugins>
+                    <!-- delombok source code -->
+                    <plugin>
+                        <groupId>org.projectlombok</groupId>
+                        <artifactId>lombok-maven-plugin</artifactId>
+                        <version>1.16.20.0</version>
+                        <executions>
+                            <execution>
+                                <id>delombok</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>delombok</goal>
+                                </goals>
+                                <configuration>
+                                    <formatPreferences>
+                                        <javaLangAsFQN>skip</javaLangAsFQN>
+                                    </formatPreferences>
+                                    <addOutputDirectory>false</addOutputDirectory>
+                                    <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- generate javadoc from delomboked sources -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.0.0</version>
+                        <configuration>
+                            <defaultVersion>${project.version}</defaultVersion>
+                            <sourcepath>${project.build.directory}/generated-sources/delombok</sourcepath>
+                            <!-- suppress doclint errors on missing tags (most of our getters don't have an @return statement for example) -->
+                            <doclint>all,-missing</doclint>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <phase>process-sources</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- generate sources jar from delomboked code -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.0.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <phase>process-sources</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- remove delomboked files from target as they can cause some confusion
+                         with IntelliJ as it thinks this is a source path and contains duplicate code -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.8</version>
+                        <executions>
+                            <execution>
+                                <phase>process-sources</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <delete dir="${project.build.directory}/generated-sources/delombok"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <build>
+        <sourceDirectory>${src.dir}</sourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -137,96 +249,6 @@
                                     </includes>
                                 </rule>
                             </rules>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- when packaging, delombok is run to generate sources for javadoc to use -->
-            <plugin>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok-maven-plugin</artifactId>
-                <version>1.16.20.0</version>
-                <executions>
-                    <execution>
-                        <id>delombok</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>delombok</goal>
-                        </goals>
-                        <configuration>
-                            <formatPreferences>
-                                <javaLangAsFQN>skip</javaLangAsFQN>
-                            </formatPreferences>
-                            <addOutputDirectory>false</addOutputDirectory>
-                            <sourceDirectory>src/main/java</sourceDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- during packaging, generate javadoc from delomboked sources -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.0.0</version>
-                <configuration>
-                    <defaultVersion>${project.version}</defaultVersion>
-                    <sourcepath>${project.build.directory}/generated-sources/delombok</sourcepath>
-                    <!-- suppress doclint errors on missing tags (most of our getters don't have an @return statement for example) -->
-                    <doclint>all,-missing</doclint>
-                </configuration>
-                <executions>
-                    <!-- generate javadocs in package phase -->
-                    <execution>
-                        <id>javadocs</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>javadoc</goal>
-                        </goals>
-                    </execution>
-                    <!-- create javadocs jar -->
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-
-            </plugin>
-
-            <!-- create source jar -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.0.1</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- remove delombok files from target after javadoc is created, jacoco is run, as they can cause some confusion
-                 with IntelliJ as it thinks this is a source path and contains duplicate code -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.8</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <delete dir="${project.build.directory}/generated-sources/delombok"/>
-                            </target>
                         </configuration>
                     </execution>
                 </executions>

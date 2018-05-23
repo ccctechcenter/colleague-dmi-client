@@ -13,6 +13,9 @@ pipeline {
                     build_action = "Build"
                     ceBuild.mvnBuild('mvn -Dmaven.test.failure.ignore-true clean package')
 
+                    // generate jar files for javadoc and sources
+                    ceBuild.mvnBuild('mvn process-sources -Pjavadoc-and-sources')
+
                     //publish coverage report
                     jacoco classPattern: '**/target/classes', execPattern: '**/target/jacoco.exec'
                 }
