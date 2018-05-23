@@ -122,9 +122,11 @@ public class DmiCTXService {
 
         if (log.isInfoEnabled()) {
             String p = null;
-            for (KeyValuePair<String, String> kp : params) {
-                if (p == null) p = kp.getKey() + "=" + kp.getValue();
-                else p += ", " + kp.getKey() + "=" + kp.getValue();
+            if (params != null) {
+                for (KeyValuePair<String, String> kp : params) {
+                    if (p == null) p = kp.getKey() + "=" + kp.getValue();
+                    else p += ", " + kp.getKey() + "=" + kp.getValue();
+                }
             }
 
             if (p == null) p = "(none)";
