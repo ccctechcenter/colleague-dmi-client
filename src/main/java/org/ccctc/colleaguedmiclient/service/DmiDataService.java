@@ -392,8 +392,8 @@ public class DmiDataService {
             String c = (columns != null ? String.join(",", columns) : "(none)");
             String k = (keys != null ? String.join(",", keys) : "(none)");
 
-            if (c.length() > 47) c = c.substring(0, 50) + "...";
-            if (k.length() > 47) k = k.substring(0, 50) + "...";
+            if (c.length() > 97) c = c.substring(0, 97) + "...";
+            if (k.length() > 97) k = k.substring(0, 97) + "...";
 
             log.info("Sending DMI Data Request.   Type = " + type + ", table = " + table
                     + ", columns = " + c + ", keys = " + k
