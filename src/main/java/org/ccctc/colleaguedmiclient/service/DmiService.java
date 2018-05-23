@@ -309,7 +309,7 @@ public class DmiService implements Closeable {
         PooledSocket socket = null;
         DataOutputStream os = null;
         DataInputStream is = null;
-        DmiTransaction response;
+        DmiTransaction response = null;
 
         try {
             socket = socketFactory.getSocket(forceNewSocket);
@@ -321,15 +321,15 @@ public class DmiService implements Closeable {
                 log.trace("DMI send: " + transaction.toDmiString());
 
             os.write(bytes);
-            response =  DmiTransaction.fromResponse(is);
-
-            if (log.isTraceEnabled() && response.getRawResponse() != null)
-                log.trace("DMI recv: " + StringUtils.join(StringUtils.FM, response.getRawResponse()));
+            response = DmiTransaction.fromResponse(is);
 
         } catch (Exception e) {
             ex = e;
             throw new RuntimeException(e);
         } finally {
+            if (log.isTraceEnabled() && response != null && response.getRawResponse() != null)
+                log.trace("DMI recv: " + StringUtils.join(StringUtils.FM, response.getRawResponse()));
+
             try {
                 if (socket != null) {
                     // recycle the socket on exception
