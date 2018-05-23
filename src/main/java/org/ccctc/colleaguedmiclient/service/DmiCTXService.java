@@ -75,8 +75,29 @@ public class DmiCTXService {
      */
     public CTXData execute(@NonNull String appl, @NonNull String transactionName, List<KeyValuePair<String, String>> params) {
         SessionCredentials creds = dmiService.getSessionCredentials();
+
+        // convert parameter names
+        List<KeyValuePair<String, String>> newParams = null;
+        if (params != null) {
+            newParams = new ArrayList<>();
+            CTXMetadata metadata = ctxMetadataService.get(appl, transactionName);
+            for (KeyValuePair<String, String> p : params) {
+                String key = p.getKey();
+                String val = p.getValue();
+
+                if (key != null) {
+                    for (CTXVariable v : metadata.getVariables()) {
+                        if (key.equals(v.getVarName()) || key.equals(v.getVarAliasName())) {
+                            newParams.add(new KeyValuePair<>(v.getVarName(), val));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         CTXRequest request = new CTXRequest(dmiService.getAccount(), creds.getToken(), creds.getControlId(),
-                dmiService.getSharedSecret(), appl, transactionName, params);
+                dmiService.getSharedSecret(), appl, transactionName, newParams);
 
         DmiTransaction dmiResponse = dmiService.send(request);
         return processResponse(dmiResponse, appl, transactionName);
@@ -101,7 +122,6 @@ public class DmiCTXService {
         return ctxResponse.getVariables();
     }
 
-
     /**
      * Process response from a CTX Transaction and map variable into their "alias" names as well as build any associations.
      *
@@ -125,33 +145,35 @@ public class DmiCTXService {
                 String rawValue = ctxResponse.getVariables().get(v.getVarName());
 
                 String variableName = (v.getVarAliasName() != null) ? v.getVarAliasName() : v.getVarName();
-                Object variableValue;
+                Object variableValue = null;
 
                 // save this mapping for later when we process associations
                 variableAliases.put(v.getVarName(), variableName);
 
-                // Colleague Transactions allow for a "Boolean" type
-                if (v.getVarIsBool() != null && v.getVarIsBool().equals("Y")) {
-                    Boolean boolValue = null;
-                    String val = rawValue.trim();
-                    if (val.length() > 0) {
-                        if (val.charAt(0) == '1' || val.charAt(0) == 'Y' || val.charAt(0) == 'y')
-                            boolValue = true;
-                        else if (val.charAt(0) == '0' || val.charAt(0) == 'N' || val.charAt(0) == 'n')
-                            boolValue = false;
+                if (rawValue != null) {
+                    // Colleague Transactions allow for a "Boolean" type
+                    if (v.getVarIsBool() != null && v.getVarIsBool().equals("Y")) {
+                        Boolean boolValue = null;
+                        String val = rawValue.trim();
+                        if (val.length() > 0) {
+                            if (val.charAt(0) == '1' || val.charAt(0) == 'Y' || val.charAt(0) == 'y')
+                                boolValue = true;
+                            else if (val.charAt(0) == '0' || val.charAt(0) == 'N' || val.charAt(0) == 'n')
+                                boolValue = false;
+                        }
+
+                        variableValue = boolValue;
+                    } else {
+                        // create a partial CDD entry with what we know about this variable so we can convert it to the
+                        // proper data type
+                        CddEntry e = CddEntry.builder()
+                                .databaseUsageType(v.getVarDataType())
+                                .informConversionString(v.getVarConv())
+                                .maximumStorageSize(parseIntOrNull(v.getVarSize()))
+                                .build();
+
+                        variableValue = CddUtils.convertToValue(rawValue, e);
                     }
-
-                    variableValue = boolValue;
-                } else {
-                    // create a partial CDD entry with what we know about this variable so we can convert it to the
-                    // proper data type
-                    CddEntry e = CddEntry.builder()
-                            .databaseUsageType(v.getVarDataType())
-                            .informConversionString(v.getVarConv())
-                            .maximumStorageSize(parseIntOrNull(v.getVarSize()))
-                            .build();
-
-                    variableValue = CddUtils.convertToValue(rawValue, e);
                 }
 
                 variables.put(variableName, variableValue);

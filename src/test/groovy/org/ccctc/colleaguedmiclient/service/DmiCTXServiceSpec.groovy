@@ -120,7 +120,7 @@ class DmiCTXServiceSpec extends Specification{
         1 * d.getAccount() >> "account"
         1 * d.getSharedSecret() >> "secret"
         1 * d.send(*_) >> t
-        1 * m.get("CORE", "TRANSACTION.NAME") >> metadata
+        2 * m.get("CORE", "TRANSACTION.NAME") >> metadata
         0 * _
 
         e1.variables["Second"] == "SECOND"

@@ -1,5 +1,6 @@
 package org.ccctc.colleaguedmiclient.util
 
+import org.ccctc.colleaguedmiclient.exception.FieldOverflowException
 import org.ccctc.colleaguedmiclient.model.CddEntry
 import spock.lang.Specification
 
@@ -24,11 +25,11 @@ class CddUtilsSpec extends Specification {
         def strDate = "25"
 
         when:
-        def ld1 = convertFromValue(localDate, dateType)
-        def ldt1 = convertFromValue(localDateTime, dateType)
-        def d1 = convertFromValue(date, dateType)
-        def i1 = convertFromValue(intDate, dateType)
-        def s1 = convertFromValue(strDate, dateType)
+        def ld1 = convertFromValue(localDate, dateType, false)
+        def ldt1 = convertFromValue(localDateTime, dateType, false)
+        def d1 = convertFromValue(date, dateType, false)
+        def i1 = convertFromValue(intDate, dateType, true)
+        def s1 = convertFromValue(strDate, dateType, true)
 
         then:
         ld1 == StringUtils.dateToString(localDate)
@@ -38,11 +39,11 @@ class CddUtilsSpec extends Specification {
         i1.toString() == StringUtils.dateToString(StringUtils.BASE_DATE.plusDays(intDate))
 
         when:
-        def ld2 = convertFromValue(localDate, notDateType)
-        def ldt2 = convertFromValue(localDateTime, notDateType)
-        def d2 = convertFromValue(date, notDateType)
-        def i2 = convertFromValue(intDate, dateType)
-        def s2 = convertFromValue(strDate, dateType)
+        def ld2 = convertFromValue(localDate, notDateType, true)
+        def ldt2 = convertFromValue(localDateTime, notDateType, true)
+        def d2 = convertFromValue(date, notDateType, true)
+        def i2 = convertFromValue(intDate, dateType, false)
+        def s2 = convertFromValue(strDate, dateType, false)
 
         then:
         ld2 == localDate.toString()
@@ -64,11 +65,11 @@ class CddUtilsSpec extends Specification {
         def strTime = intTime.toString()
 
         when:
-        def lt1 = convertFromValue(localTime, timeType)
-        def ldt1 = convertFromValue(localDateTime, timeType)
-        def d1 = convertFromValue(date, timeType)
-        def i1 = convertFromValue(intTime, timeType)
-        def s1 = convertFromValue(strTime, timeType)
+        def lt1 = convertFromValue(localTime, timeType, true)
+        def ldt1 = convertFromValue(localDateTime, timeType, false)
+        def d1 = convertFromValue(date, timeType, true)
+        def i1 = convertFromValue(intTime, timeType, true)
+        def s1 = convertFromValue(strTime, timeType, true)
 
         then:
         lt1 == StringUtils.timeToString(localTime)
@@ -78,11 +79,11 @@ class CddUtilsSpec extends Specification {
         lt1 == s1
 
         when:
-        def lt2 = convertFromValue(localTime, notTimeType)
-        def ldt2 = convertFromValue(localDateTime, notTimeType)
-        def d2 = convertFromValue(date, notTimeType)
-        def i2 = convertFromValue(intTime, notTimeType)
-        def s2 = convertFromValue(strTime, notTimeType)
+        def lt2 = convertFromValue(localTime, notTimeType, true)
+        def ldt2 = convertFromValue(localDateTime, notTimeType, false)
+        def d2 = convertFromValue(date, notTimeType, true)
+        def i2 = convertFromValue(intTime, notTimeType, true)
+        def s2 = convertFromValue(strTime, notTimeType, true)
 
         then:
         lt2 == localTime.toString()
@@ -105,12 +106,12 @@ class CddUtilsSpec extends Specification {
         def aLong = (Long)99
 
         when:
-        def s1 = convertFromValue(string, decimalType)
-        def b1 = convertFromValue(bigDecimal, decimalType)
-        def d1 = convertFromValue(aDouble, decimalType)
-        def f1 = convertFromValue(aFloat, decimalType)
-        def i1 = convertFromValue(aInteger, decimalType)
-        def l1 = convertFromValue(aLong, decimalType)
+        def s1 = convertFromValue(string, decimalType, true)
+        def b1 = convertFromValue(bigDecimal, decimalType, false)
+        def d1 = convertFromValue(aDouble, decimalType, true)
+        def f1 = convertFromValue(aFloat, decimalType, true)
+        def i1 = convertFromValue(aInteger, decimalType, true)
+        def l1 = convertFromValue(aLong, decimalType, true)
 
         then:
         s1 == "9923450"
@@ -123,12 +124,12 @@ class CddUtilsSpec extends Specification {
         i1 == l1
 
         when:
-        def s2 = convertFromValue(string, notDecimalType)
-        def b2 = convertFromValue(bigDecimal, notDecimalType)
-        def d2 = convertFromValue(aDouble, notDecimalType)
-        def f2 = convertFromValue(aFloat, notDecimalType)
-        def i2 = convertFromValue(aInteger, notDecimalType)
-        def l2 = convertFromValue(aLong, notDecimalType)
+        def s2 = convertFromValue(string, notDecimalType, true)
+        def b2 = convertFromValue(bigDecimal, notDecimalType, false)
+        def d2 = convertFromValue(aDouble, notDecimalType, true)
+        def f2 = convertFromValue(aFloat, notDecimalType, true)
+        def i2 = convertFromValue(aInteger, notDecimalType, true)
+        def l2 = convertFromValue(aLong, notDecimalType, true)
 
         then:
         s2 == string
@@ -152,13 +153,13 @@ class CddUtilsSpec extends Specification {
         def aFloat = (Float)99.2345
 
         when:
-        def s1 = convertFromValue(string, integerType)
-        def b1 = convertFromValue(bigDecimal, integerType)
-        def bi1 = convertFromValue(bigInteger, integerType)
-        def d1 = convertFromValue(aDouble, integerType)
-        def f1 = convertFromValue(aFloat, integerType)
-        def i1 = convertFromValue(aInteger, integerType)
-        def l1 = convertFromValue(aLong, integerType)
+        def s1 = convertFromValue(string, integerType, true)
+        def b1 = convertFromValue(bigDecimal, integerType, true)
+        def bi1 = convertFromValue(bigInteger, integerType, false)
+        def d1 = convertFromValue(aDouble, integerType, true)
+        def f1 = convertFromValue(aFloat, integerType, true)
+        def i1 = convertFromValue(aInteger, integerType, true)
+        def l1 = convertFromValue(aLong, integerType, true)
 
         then:
         s1 == b1
@@ -174,9 +175,9 @@ class CddUtilsSpec extends Specification {
         def cddEntry = CddEntry.builder().build()
 
         when:
-        def b1 = convertFromValue((Boolean) true, cddEntry)
-        def b2 = convertFromValue((Boolean) false, cddEntry)
-        def b3 = convertFromValue((Boolean) null, cddEntry)
+        def b1 = convertFromValue((Boolean) true, cddEntry, true)
+        def b2 = convertFromValue((Boolean) false, cddEntry, true)
+        def b3 = convertFromValue((Boolean) null, cddEntry, true)
 
         then:
         b1 == "Y"
@@ -184,24 +185,51 @@ class CddUtilsSpec extends Specification {
         b3 == ""
     }
 
-    def "convertFromValue - NumberFormatException"() {
+    def "convertFromValue - exceptions"() {
         setup:
         def dateType = CddEntry.builder().informConversionString("D4").build()
         def timeType = CddEntry.builder().informConversionString("MT").build()
+        def decType = CddEntry.builder().informConversionString("MD2").maximumStorageSize(4).build()
+        def stringType1 = CddEntry.builder().maximumStorageSize(5).build()
+        def stringType2 = CddEntry.builder().defaultDisplaySize("5").build()
+        def commentsType = CddEntry.builder().databaseUsageType("T").build()
 
-        when: convertFromValue(-1, timeType)
+        when: convertFromValue(-1, timeType, true)
+        then: thrown FieldOverflowException
+
+        when: convertFromValue("9000000", timeType, true)
+        then: thrown FieldOverflowException
+
+        when: convertFromValue("-9999999999999999", dateType, true)
+        then: thrown FieldOverflowException
+
+        when: convertFromValue("9999999999999999", dateType, true)
+        then: thrown FieldOverflowException
+
+        when: convertFromValue("abc", timeType, true)
         then: thrown NumberFormatException
 
-        when: convertFromValue("9000000", timeType)
+        when: convertFromValue("abc", dateType, true)
         then: thrown NumberFormatException
 
-        when: convertFromValue("abc", timeType)
-        then: thrown NumberFormatException
+        when: convertFromValue("122.3", decType, true)
+        then: thrown FieldOverflowException
 
-        when: convertFromValue("abc", dateType)
-        then: thrown NumberFormatException
+        when: convertFromValue("123456", stringType1, true)
+        then: thrown FieldOverflowException
 
+        when: convertFromValue("123456", stringType2, true)
+        then: thrown FieldOverflowException
 
+        when: convertFromValue(StringUtils.charRepeat('a' as char, 1997), commentsType, true)
+        then: thrown FieldOverflowException
+
+        // rounding
+        when: def x = convertFromValue("12.234", decType, true)
+        then: x == "1223"
+
+        when: x = convertFromValue("12.235", decType, true)
+        then: x == "1224"
 
     }
 }

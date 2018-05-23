@@ -2,12 +2,14 @@ package org.ccctc.colleaguedmiclient.util;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.ccctc.colleaguedmiclient.exception.FieldOverflowException;
 import org.ccctc.colleaguedmiclient.model.CddEntry;
 import org.ccctc.colleaguedmiclient.model.CddEntryType;
 
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -17,6 +19,14 @@ import java.util.Date;
 public class CddUtils {
 
     private static final Log log = LogFactory.getLog(CddUtils.class);
+
+    // maximum and minimum from UniData documentation
+    private static final long MIN_DATE = -46385L;  // December 31, 1840
+    private static final long MAX_DATE = 2933628L; // December 31, 9999
+
+    // maximum and minimum times as seconds in a day
+    private static final long MIN_TIME = 0;     // 00:00:00
+    private static final long MAX_TIME = 86399; // 23:59:59
 
     private static final String EMPTY_STRING = "";
 
@@ -133,9 +143,6 @@ public class CddUtils {
      * Convert a Java type to a String value for serialization to the DMI in the appropriate format for the data type
      * of the CDD Entry.
      * <p>
-     * Null values:
-     * Null for any data type is converted to an empty string
-     * <p>
      * Numeric type handling:
      * BigDecimal, BigInteger, Double, Float, Integer and Long are supported numeric types. Standard rounding applies on conversion.
      * All other types are converted to a BigDecimal from their {@code toString()} value. {@code NumberFormatException} is
@@ -152,45 +159,59 @@ public class CddUtils {
      * Other types:
      * Boolean - converted to Y or N
      * Any else is converted to a string using {@code toString()}
+     * <p>
+     * Notes:
+     * 1. Null values for any data type are converted to an empty string
+     * 2. Field sizes are optionally checked based on the value of {@code checkFieldSize}
      *
-     * @param value    Java type to convert
-     * @param cddEntry CDD Entry
+     * @param value          Java type to convert
+     * @param cddEntry       CDD Entry
+     * @param checkFieldSize Validate field size, throwing {@code FieldOverflowException} if overflow occurs?
      * @return Converted value
-     * @throws NumberFormatException if conversion to a numeric value fails (including date and time, which are numeric)
+     * @throws NumberFormatException  if conversion to a numeric value fails (including date and time, which are numeric)
+     * @throws FieldOverflowException if conversion would result in exceeding the max size of the field
      */
-    public static String convertFromValue(Object value, CddEntry cddEntry) throws NumberFormatException {
+    public static String convertFromValue(Object value, CddEntry cddEntry, boolean checkFieldSize)
+            throws NumberFormatException, FieldOverflowException {
         if (value == null) return "";
 
         CddEntryType cddEntryType = cddEntryType(cddEntry);
 
+        Integer maxLength = null;
+        if ("T".equals(cddEntry.getDatabaseUsageType())) {
+            maxLength = 1996; // "text" field - in SQL Server is up to 1996 characters
+        } else {
+            maxLength = cddEntry.getMaximumStorageSize();
+            if (maxLength == null) {
+                try {
+                    maxLength = Integer.parseInt(cddEntry.getDefaultDisplaySize());
+                } catch (NumberFormatException ignored) { }
+            }
+        }
+
         // numeric type handling
         if (cddEntryType.isNumeric()) {
+            BigDecimal dVal;
+
             Integer scale = cddEntryType.getScale();
             if (scale == null) scale = 0;
 
-            if (value instanceof BigDecimal) {
-                Long v = ((BigDecimal) value).movePointRight(scale).longValue();
-                return v.toString();
-            }
+            if (value instanceof BigDecimal)
+                dVal = ((BigDecimal) value);
+            else if (value instanceof Double)
+                dVal = new BigDecimal((double) value);
+            else if (value instanceof Float)
+                dVal = new BigDecimal((double) (float)value);
+            else
+                dVal = new BigDecimal(value.toString());
 
-            if (value instanceof Double) {
-                Long v = new BigDecimal((double) value).movePointRight(scale).longValue();
-                return v.toString();
-            }
+            // convert to string, check size
+            if (scale > 0) dVal = dVal.movePointRight(scale);
+            String sVal = dVal.setScale(0, RoundingMode.HALF_UP).toString();
+            if (checkFieldSize && maxLength != null && sVal.length() > maxLength)
+                throw new FieldOverflowException("Maximum size exceeded for numeric field " + cddEntry.getName());
 
-            if (value instanceof Float) {
-                Long v = new BigDecimal((double) (float)value).movePointRight(scale).longValue();
-                return v.toString();
-            }
-
-            if (value instanceof Integer || value instanceof Long || value instanceof BigInteger) {
-                // for efficiency, Integer, Long and BigInteger conversion should be faster this way than converting to BigDecimal
-                return value.toString() + StringUtils.charRepeat('0', scale);
-            }
-
-            BigDecimal bd = new BigDecimal(value.toString());
-            Long v = bd.movePointRight(scale).longValue();
-            return v.toString();
+            return sVal;
         }
 
         // date / time handling
@@ -203,17 +224,21 @@ public class CddUtils {
                     value = ((Date)value).toInstant().atZone(ZoneId.systemDefault()).toLocalTime();
             }
 
-
             if (cddEntryType.isDate()) {
+                Long dateValue;
+
                 if (value instanceof LocalDate)
-                    return StringUtils.dateToString((LocalDate)value);
+                    dateValue = Long.parseLong(StringUtils.dateToString((LocalDate)value));
+                else if (value instanceof LocalDateTime)
+                    dateValue = Long.parseLong(StringUtils.dateToString(((LocalDateTime)value).toLocalDate()));
+                else {
+                    dateValue = Long.parseLong(value.toString());
+                }
 
-                if (value instanceof LocalDateTime)
-                    return StringUtils.dateToString(((LocalDateTime)value).toLocalDate());
+                if (checkFieldSize && (dateValue < MIN_DATE || dateValue > MAX_DATE))
+                    throw new FieldOverflowException("Date value invalid - must be a number between " + MIN_DATE + " and " + MAX_DATE);
 
-                // date handling for non-LocalDate. any positive or negative number is valid.
-                Long v = Long.parseLong(value.toString());
-                return v.toString();
+                return Long.toString(dateValue);
             } else {
                 if (value instanceof LocalTime)
                     return StringUtils.timeToString((LocalTime)value);
@@ -223,8 +248,8 @@ public class CddUtils {
 
                 // time handling for non-LocalTime. must be a number between 0 and 86400 (number of seconds in a day).
                 Long v = Long.parseLong(value.toString());
-                if (v < 0 || v > 86400)
-                    throw new NumberFormatException("Time value invalid - must be a number between 0 and 86400");
+                if (checkFieldSize && (v < MIN_TIME || v > MAX_TIME))
+                    throw new FieldOverflowException("Time value invalid - must be a number between " + MIN_TIME + " and  " + MAX_TIME);
                 return v.toString();
             }
         }
@@ -233,7 +258,11 @@ public class CddUtils {
             return ((Boolean)value) ? "Y" : "N";
 
         // anything else can be converted to a string
-        return value.toString();
+        String sVal = value.toString();
+        if (checkFieldSize && maxLength != null && sVal.length() > maxLength)
+            throw new FieldOverflowException("Maximum size exceeded for text field " + cddEntry.getName());
+
+        return sVal;
     }
 
 
