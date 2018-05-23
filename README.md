@@ -4,9 +4,7 @@ The Colleague DMI Client is a java library that handles communicatoins with the 
 
 ## Release History ##
 
-__1.0.2__
-
-* Initial release
+See [Release Notes](release-notes.md)
 
 ## Compilation ##
     
@@ -194,7 +192,7 @@ dmi.host.name.override=
 dmi.shared.secret=shared-secret
 dmi.pool.size=10
 dmi.authorization.expiration.seconds=14400
-dmi.max.transaction.retry=1
+dmi.max.transaction.retry=2
 dmi.metadata.cache.seconds=86400
 ```
 
