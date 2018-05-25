@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.ccctc.colleaguedmiclient.exception.DmiServiceException;
+import org.ccctc.colleaguedmiclient.exception.DmiTransactionException;
 import org.ccctc.colleaguedmiclient.model.SessionCredentials;
 import org.ccctc.colleaguedmiclient.socket.PooledSocket;
 import org.ccctc.colleaguedmiclient.model.DmiSubTransaction;
@@ -321,7 +322,14 @@ public class DmiService implements Closeable {
                 log.trace("DMI send: " + transaction.toDmiString());
 
             os.write(bytes);
-            response = DmiTransaction.fromResponse(is);
+
+            try {
+                response = DmiTransaction.fromResponse(is);
+            } catch(DmiTransactionException e) {
+                // for logging purposes, set response on exception
+                response = e.getDmiTransaction();
+                throw e;
+            }
 
         } catch (Exception e) {
             ex = e;

@@ -217,7 +217,7 @@ public class DmiTransaction {
      */
     protected void addSubTransaction(DmiSubTransaction subTransaction) {
         if (hashAdded)
-            throw new DmiTransactionException("Attempted to add sub transaction to a DMI transaction after hash subrequest");
+            throw new DmiTransactionException("Attempted to add sub transaction to a DMI transaction after hash subrequest", this);
 
         subTransactions.add(subTransaction);
     }
@@ -349,7 +349,7 @@ public class DmiTransaction {
 
             return result;
         } catch (UnsupportedEncodingException e) {
-            throw new DmiTransactionException("Encoding error - " + e.getClass().getName() + ": " + e.getMessage());
+            throw new DmiTransactionException("Encoding error - " + e.getClass().getName() + ": " + e.getMessage(), this);
         }
     }
 
@@ -393,15 +393,15 @@ public class DmiTransaction {
             }
 
             if (size.length() == 0)
-                throw new DmiTransactionException("Empty header");
+                throw new DmiTransactionException("Empty header", this);
 
             try {
                 responseSize = Long.valueOf(size);
             } catch (NumberFormatException e) {
-                throw new DmiTransactionException("Invalid header size (non-numeric)");
+                throw new DmiTransactionException("Invalid header size (non-numeric)", this);
             }
         } catch (IOException e) {
-            throw new DmiTransactionException("Problem processing DMI response - " + e.getClass().getName() + ": " + e.getMessage());
+            throw new DmiTransactionException("Problem processing DMI response - " + e.getClass().getName() + ": " + e.getMessage(), this);
         }
 
         this.transactionBytes = headerBytes + responseSize;
@@ -418,7 +418,7 @@ public class DmiTransaction {
             try {
                 int bytesRead = is.read(data);
                 if (bytesRead == -1)
-                    throw new DmiTransactionException("Encountered EOF before end of response");
+                    throw new DmiTransactionException("Encountered EOF before end of response", this);
 
                 totalRead += bytesRead;
 
@@ -486,10 +486,10 @@ public class DmiTransaction {
                         }
                     }
 
-                    throw new DmiTransactionException("Transaction end not found");
+                    throw new DmiTransactionException("Transaction end not found", this);
                 }
             } catch (IOException e) {
-                throw new DmiTransactionException("Problem processing response - " + e.getClass().getName() + ": " + e.getMessage());
+                throw new DmiTransactionException("Problem processing response - " + e.getClass().getName() + ": " + e.getMessage(), this);
             }
         }
 
@@ -558,17 +558,17 @@ public class DmiTransaction {
 
             // check size
             if (subCommands.size() < 2)
-                throw new DmiTransactionException("sub transaction of incorrect size");
+                throw new DmiTransactionException("sub transaction of incorrect size", this);
 
             int sizeCheck;
             try {
                 sizeCheck = Integer.valueOf(subCommands.get(0));
 
                 if (sizeCheck != subCommands.size() + 2)
-                    throw new DmiTransactionException("sub transaction size does not match content");
+                    throw new DmiTransactionException("sub transaction size does not match content", this);
 
             } catch (NumberFormatException e) {
-                throw new DmiTransactionException("sub transaction of size value non numeric");
+                throw new DmiTransactionException("sub transaction of size value non numeric", this);
             }
 
             int mioLevel = 0;
@@ -616,7 +616,7 @@ public class DmiTransaction {
             addSubTransaction(new DmiSubTransaction(SDHSQ, 0, commands));
             hashAdded = true;
         } catch (UnsupportedEncodingException | NoSuchAlgorithmException e) {
-            throw new DmiTransactionException("Unable to compute hash value - " + e.getClass().getName() + ": " + e.getMessage());
+            throw new DmiTransactionException("Unable to compute hash value - " + e.getClass().getName() + ": " + e.getMessage(), this);
         }
     }
 
