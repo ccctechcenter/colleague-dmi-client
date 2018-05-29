@@ -1,5 +1,9 @@
 # Release Notes #
 
+__1.0.5__
+
+* Fix for blank lines at end of DMI transaction on certain error conditions
+
 __1.0.4__
 
 * Trace logging improvements when exceptions occur processing a DMI response

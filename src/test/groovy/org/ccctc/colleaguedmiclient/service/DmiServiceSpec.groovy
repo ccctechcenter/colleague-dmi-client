@@ -36,6 +36,9 @@ class DmiServiceSpec extends Specification{
     // session state response
     static String sessionStateGood
 
+    // error response
+    static String tokenExpired
+
     def setupSpec() {
         // good response based on actual DMI response with credentials modified
         goodResponse = 'DMIþ1.4þLGRSþdev0_rtþUTþ' + token + 'þþ' + controlId + 'ýj0þ18394þ1628þHOSTþLGRQþþDMI_PROCESS_LGRQþ18394þ1628þSLGRSþ12þ0þ1þþþþþþþþSLGRS.ENDþSSTATEþ14þ0þ0þþþþþþþþþþSSTATE.END'
@@ -68,6 +71,10 @@ class DmiServiceSpec extends Specification{
         // good response from a session state request (from keepAlive)
         sessionStateGood = 'DMIþ1.4þGSTRSþdev0_rtþUTþ' + token + 'þþ' + controlId + 'ýj0þ18394þ49438þHOSTþGSTRQþþDMI_PROCESS_GSTRQþ18394þ49438þSSTATEþ14þ0þ0þþþþ0þþþþþþSSTATE.END'
         sessionStateGood = "#" + (sessionStateGood.size() + 5) + "#" + sessionStateGood + "#END#"
+
+        // token expired error
+        tokenExpired = 'DMIþ1.4þCTRSþdev0_rtþCOREþ' + token + 'þþ' + controlId + 'ýj0þ18412þ46893þHOSTþCTRQþþERRORSþ18412þ46893þSERRSþ7þ0þUNKNOWNþWA3025þWWW.TOKENS does not have a person ID assigned.þSERRS.ENDþSERRSþ7þ0þTOKENþDMI.HOST.0017þYour previous session has expired and is no longer valid.þSERRS.ENDþþþY'
+        tokenExpired = "#" + (tokenExpired.size() + 5) + "#" + tokenExpired + "#END#"
     }
 
     def setup() {
@@ -463,5 +470,45 @@ class DmiServiceSpec extends Specification{
         2 * os.close()
         2 * os.flush()
         0 * _
+    }
+
+    def "token expired - log back in"() {
+        setup:
+
+        def socket = Mock(PooledSocket)
+        def os = Mock(OutputStream)
+
+        def expiredResponse = new ByteArrayInputStream(tokenExpired.getBytes("windows-1252"))
+        def goodLoginResponse = new ByteArrayInputStream(goodResponse.getBytes("windows-1252"))
+        def goodDataResponse = new ByteArrayInputStream(dataResponseGood.getBytes("windows-1252"))
+
+        def transaction1 = new DmiTransaction("account", "DAFS", "appl", "badtoken", "badcontrolid")
+
+        // make sure exception thrown contains correct error message (retry is 0 so log back in not attempted)
+        when:
+        dmiService.setMaxDmiTransactionRetry(0)
+        dmiService.send(transaction1)
+
+        then:
+        1 * socketFactory.getSocket(false) >> socket
+        1 * socket.getOutputStream() >> os
+        1 * socket.getInputStream() >>> [expiredResponse, goodLoginResponse, goodDataResponse]
+        def e = thrown DmiServiceException
+        e.getMessage().contains("WWW.TOKENS does not have a person ID assigned")
+        e.getMessage().contains("Your previous session has expired and is no longer valid")
+
+        // make sure the login is retried
+        when:
+        expiredResponse.reset()
+        dmiService.setMaxDmiTransactionRetry(1)
+        dmiService.send(transaction1)
+
+        then:
+        1 * socketFactory.getSocket(false) >> socket
+        2 * socketFactory.getSocket(true) >> socket
+        3 * socket.getOutputStream() >> os
+        3 * socket.getInputStream() >>> [expiredResponse, goodLoginResponse, goodDataResponse]
+        transaction1.token[0] == token
+        transaction1.controlId[0] == controlId
     }
 }
