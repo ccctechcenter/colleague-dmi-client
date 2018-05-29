@@ -48,10 +48,10 @@ public class CTXResponse {
             }
 
             if (sctrs != null && sctval != null)
-                return new CTXResponse(sctrs, sctval);
+                return new CTXResponse(transaction, sctrs, sctval);
         }
 
-        throw new DmiTransactionException("DMI Transaction does not contain a response to a Colleague Transaction");
+        throw new DmiTransactionException("DMI Transaction does not contain a response to a Colleague Transaction", transaction);
     }
 
     /**
@@ -72,26 +72,27 @@ public class CTXResponse {
      * 9  =
      * .. etc - each variable takes up 4 lines with the first two being name and value respectively
      *
-     * @param sctrs  SCTRS sub transaction
-     * @param sctval SCTVAL sub transaction
+     * @param transaction DMI Transaction
+     * @param sctrs       SCTRS sub transaction
+     * @param sctval      SCTVAL sub transaction
      */
-    private CTXResponse(DmiSubTransaction sctrs, DmiSubTransaction sctval) {
+    private CTXResponse(DmiTransaction transaction, DmiSubTransaction sctrs, DmiSubTransaction sctval) {
 
         // SCTVAL contains the values of the output variables
         String[] commands = sctval.getCommands();
 
         if (commands.length < 2)
-            throw new DmiTransactionException("Malformed response: sub transaction not long enough");
+            throw new DmiTransactionException("Malformed response: sub transaction not long enough", transaction);
 
         Integer variablesCount = parseIntOrNull(commands[1]);
         if (variablesCount == null)
-            throw new DmiTransactionException("Malformed response: variable count is missing");
+            throw new DmiTransactionException("Malformed response: variable count is missing", transaction);
 
         for (int x = 0; x < variablesCount; x++) {
             int pos = 2 + x * 4;
 
             if (commands.length <= pos + 1)
-                throw new DmiTransactionException("Malformed response: end of transaction before all variables read");
+                throw new DmiTransactionException("Malformed response: end of transaction before all variables read", transaction);
 
             String key = commands[pos];
             String value = commands[pos+1];

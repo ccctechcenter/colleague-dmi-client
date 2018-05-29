@@ -123,6 +123,7 @@ class DmiTransactionSpec extends Specification {
         then:
         e = thrown DmiTransactionException
         e.getMessage().contains("Empty header")
+        e.getDmiTransaction() != null // for coverage - exception should come with the transaction that threw the exception
 
         when:
         DmiTransaction.fromResponse(new DataInputStream(new ByteArrayInputStream(nonNumericHeader.getBytes("windows-1252"))))

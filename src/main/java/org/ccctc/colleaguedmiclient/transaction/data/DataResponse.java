@@ -66,29 +66,30 @@ public class DataResponse {
     public static DataResponse fromDmiTransaction(@NonNull DmiTransaction transaction) {
         for (DmiSubTransaction sub : transaction.getSubTransactions()) {
             if (SDAFS.equals(sub.getTransactionType()))
-                return new DataResponse(sub);
+                return new DataResponse(transaction, sub);
         }
 
-        throw new DmiTransactionException("DMI Transaction does not contain a response to a data request");
+        throw new DmiTransactionException("DMI Transaction does not contain a response to a data request", transaction);
     }
 
     /**
      * Create a data response from a sub transaction of type SDAFS
      *
-     * @param subTransaction Sub transaction
+     * @param transaction    DMI Transaction
+     * @param subTransaction SDAFS sub transaction
      */
-    private DataResponse(DmiSubTransaction subTransaction) {
+    private DataResponse(DmiTransaction transaction, DmiSubTransaction subTransaction) {
 
         String[] commands = subTransaction.getCommands();
 
         if (commands.length < 11)
-            throw new DmiTransactionException("Malformed response: sub transaction not long enough");
+            throw new DmiTransactionException("Malformed response: sub transaction not long enough", transaction);
 
         mode = commands[4];
         table = commands[5];
 
         if (table == null)
-            throw new DmiTransactionException("Malformed response: no table/view specified");
+            throw new DmiTransactionException("Malformed response: no table/view specified", transaction);
 
         assert F.equals(commands[0]);
         assert STANDARD.equals(commands[1]);
@@ -103,11 +104,11 @@ public class DataResponse {
         */
 
         if (SINGLE.equals(mode)) {
-            Single(subTransaction);
+            Single(transaction, subTransaction);
         } else if (BATCH.equals(mode)) {
-            Batch(subTransaction);
+            Batch(transaction, subTransaction);
         } else {
-            throw new DmiTransactionException("Malformed response: unexpected mode: " + mode);
+            throw new DmiTransactionException("Malformed response: unexpected mode: " + mode, transaction);
         }
     }
 
@@ -139,32 +140,33 @@ public class DataResponse {
      * ...
      * xx = (table name).END - end of table block
      *
-     * @param subTransaction Sub transaction
+     * @param transaction    DMI Transaction
+     * @param subTransaction SDAFS sub transaction
      */
-    private void Batch(DmiSubTransaction subTransaction) {
+    private void Batch(DmiTransaction transaction, DmiSubTransaction subTransaction) {
 
         String[] commands = subTransaction.getCommands();
 
         // verify transaction size
         Integer subsetSize = parseIntOrNull(commands[6]);
         if (subsetSize == null)
-            throw new DmiTransactionException("Malformed response: subset size is missing");
+            throw new DmiTransactionException("Malformed response: subset size is missing", transaction);
         else if (subsetSize != commands.length - 4)
-            throw new DmiTransactionException("Malformed response: subset size does match response size");
+            throw new DmiTransactionException("Malformed response: subset size does match response size", transaction);
 
         // verify end of table block
         if (!(table + ".END").equals(commands[subsetSize + 3]))
-            throw new DmiTransactionException("Malformed response: " + table + ".END not found where expected");
+            throw new DmiTransactionException("Malformed response: " + table + ".END not found where expected", transaction);
 
         Integer records = parseIntOrNull(commands[12]);
 
         if (records == null)
-            throw new DmiTransactionException("Malformed response: record count is missing");
+            throw new DmiTransactionException("Malformed response: record count is missing", transaction);
 
         int startPos = 14;
         for(int x = 0; x < records; x++) {
             if (startPos + 2 > commands.length)
-                throw new DmiTransactionException("Malformed response: end of transaction before all records read");
+                throw new DmiTransactionException("Malformed response: end of transaction before all records read", transaction);
 
             // get header of the record, determine length and start and end read positions
             String tuple = commands[startPos];
@@ -173,7 +175,7 @@ public class DataResponse {
 
             // handle errors - 00011 is not found, 00012 is read error
             if (ERROR_00011.equals(errorCode)) continue;
-            if (ERROR_00012.equals(errorCode)) throw new DmiTransactionException("Error reading file - 00012");
+            if (ERROR_00012.equals(errorCode)) throw new DmiTransactionException("Error reading file - 00012", transaction);
 
             int recordLen = parseIntOrNull(commands[startPos + 2]);
             int fieldsStart = startPos + 4;
@@ -184,9 +186,9 @@ public class DataResponse {
 
             // validate position of TUPLE and (key).END
             if (!TUPLE.equals(tuple))
-                throw new DmiTransactionException("Malformed response: missing TUPLE statement");
+                throw new DmiTransactionException("Malformed response: missing TUPLE statement", transaction);
             if (fieldsEnd >= commands.length || !(key + ".END").equals(commands[fieldsEnd]))
-                throw new DmiTransactionException("Malformed response: end of record not found for key " + key);
+                throw new DmiTransactionException("Malformed response: end of record not found for key " + key, transaction);
 
             String[] d = Arrays.copyOfRange(commands, fieldsStart, fieldsEnd);
 
@@ -218,22 +220,23 @@ public class DataResponse {
      * ...
      * xx = (table name).END - end of table block
      *
-     * @param subTransaction Sub transaction
+     * @param transaction    DMI Transaction
+     * @param subTransaction SDAFS sub transaction
      */
-    private void Single(DmiSubTransaction subTransaction) {
+    private void Single(DmiTransaction transaction, DmiSubTransaction subTransaction) {
 
         String[] commands = subTransaction.getCommands();
 
         // verify transaction size
         Integer subsetSize = parseIntOrNull(commands[6]);
         if (subsetSize == null)
-            throw new DmiTransactionException("Malformed response: subset size is missing");
+            throw new DmiTransactionException("Malformed response: subset size is missing", transaction);
         else if (subsetSize != commands.length - 12)
-            throw new DmiTransactionException("Malformed response: subset size does match response size");
+            throw new DmiTransactionException("Malformed response: subset size does match response size", transaction);
 
         // verify end of table block
         if (!(table + ".END").equals(commands[subsetSize + 11]))
-            throw new DmiTransactionException("Malformed response: " + table + ".END not found where expected");
+            throw new DmiTransactionException("Malformed response: " + table + ".END not found where expected", transaction);
 
         String key = commands[8];
         if (key == null) key = "";
