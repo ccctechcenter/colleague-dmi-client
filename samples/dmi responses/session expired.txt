@@ -1,0 +1,38 @@
+DMI
+1.4
+CTRS
+dev0_rt
+CORE
+908339781507900
+
+1506826786ýj0
+18412
+46893
+HOST
+CTRQ
+
+ERRORS
+18412
+46893
+SERRS
+7
+0
+UNKNOWN
+WA3025
+WWW.TOKENS does not have a person ID assigned.
+SERRS.END
+SERRS
+7
+0
+TOKEN
+DMI.HOST.0017
+Your previous session has expired and is no longer valid.
+SERRS.END
+
+
+Y
+----- (this line is not part of the transaction. raw transaction below.) -----
+DMIþ1.4þCTRSþdev0_rtþCOREþ908339781507900þþ1506826786ýj0þ18412þ46893þHOSTþCTRQþþERRORSþ18412þ46893þSERRSþ7þ0þUNKNOWNþWA3025þWWW.TOKENS does not have a person ID assigned.þSERRS.ENDþSERRSþ7þ0þTOKENþDMI.HOST.0017þYour previous session has expired and is no longer valid.þSERRS.ENDþþþY
+-----
+Notes:
+1. This response has blank lines at the end and then a "Y". It's unclear at this point what this means but this is accommodated by 1.0.5 so it doesn't thrown an exception and just logs you back in.

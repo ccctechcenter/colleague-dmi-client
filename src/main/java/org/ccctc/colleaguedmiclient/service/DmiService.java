@@ -236,6 +236,7 @@ public class DmiService implements Closeable {
             Exception ex = null;
             DmiTransaction response = null;
             String errorMessage = null;
+            boolean isError = false;
             boolean logBackIn = false;
             boolean fatal = false;
 
@@ -244,26 +245,26 @@ public class DmiService implements Closeable {
                 response = doSend(transaction, forceNewSocket);
 
                 // check to see if the response is an error
-                DmiSubTransaction errSub = null;
                 for (DmiSubTransaction sub : response.getSubTransactions()) {
                     if (SERRS.equals(sub.getTransactionType())) {
-                        errSub = sub;
-                        break;
+                        isError = true;
+
+                        // on error, determine whether we need new login credentials, whether this is a known "fatal" error,
+                        // or whether we should retry the transaction, hoping for a better result!
+
+                        String errType = (sub.getCommands().length) > 0 ? sub.getCommands()[0] : null;
+
+                        if ("SECURITY".equals(errType) || "TOKEN".equals(errType)) logBackIn = true;
+                        if ("SET".equals(errType)) fatal = true;
+
+                        if (errorMessage != null)
+                            errorMessage = errorMessage + ", " + String.join(", ", sub.getCommands());
+                        else
+                            errorMessage = String.join(", ", sub.getCommands());
                     }
                 }
 
-                // on error, determine whether we need new login credentials, whether this is a known "fatal" error,
-                // or whether we should retry the transaction, hoping for a better result!
-                if (errSub != null) {
-                    String errType = (errSub.getCommands().length) > 0 ? errSub.getCommands()[0] : null;
-
-                    if ("SECURITY".equals(errType)) logBackIn = true;
-                    if ("SET".equals(errType)) fatal = true;
-
-                    errorMessage = String.join(", ", errSub.getCommands());
-                } else {
-                    return response;
-                }
+                if (!isError) return response;
             } catch (Exception e) {
                 ex = e;
             }
