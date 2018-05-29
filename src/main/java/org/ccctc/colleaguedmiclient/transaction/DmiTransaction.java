@@ -553,8 +553,12 @@ public class DmiTransaction {
                 subCommands.add(val);
             }
 
-            if (!finishedBlock)
+            // do not save an incomplete block as some transactions appear to have lines at the end that don't follow
+            // the normal format of sub commands (so this effectively ignores the extra lines)
+            if (!finishedBlock) {
                 log.trace("Incomplete block: of type " + type);
+                break;
+            }
 
             // check size
             if (subCommands.size() < 2)
