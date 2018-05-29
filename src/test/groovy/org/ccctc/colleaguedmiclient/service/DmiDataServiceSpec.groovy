@@ -1,6 +1,6 @@
 package org.ccctc.colleaguedmiclient.service
 
-import org.ccctc.colleaguedmiclient.exception.DmiTransactionException
+import org.ccctc.colleaguedmiclient.exception.DmiServiceException
 import org.ccctc.colleaguedmiclient.model.CddEntry
 import org.ccctc.colleaguedmiclient.model.EntityMetadata
 import org.ccctc.colleaguedmiclient.model.SessionCredentials
@@ -175,7 +175,7 @@ class DmiDataServiceSpec extends Specification {
         then:
         1 * dmiService.send(_) >> response
         1 * entityMetadataService.get("APPL", "VIEW") >> null
-        def e = thrown DmiTransactionException
+        def e = thrown DmiServiceException
         e.getMessage().contains("No entity information found")
 
         // missing field - FIELD2
@@ -185,7 +185,7 @@ class DmiDataServiceSpec extends Specification {
         then:
         1 * dmiService.send(_) >> response
         1 * entityMetadataService.get("APPL", "VIEW") >> metadata
-        e = thrown DmiTransactionException
+        e = thrown DmiServiceException
         e.getMessage().contains("Invalid field requested")
 
     }

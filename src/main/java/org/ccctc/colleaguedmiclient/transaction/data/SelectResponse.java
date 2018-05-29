@@ -46,10 +46,10 @@ public class SelectResponse {
     public static SelectResponse fromDmiTransaction(@NonNull DmiTransaction transaction) {
         for (DmiSubTransaction sub : transaction.getSubTransactions()) {
             if (SDAFS.equals(sub.getTransactionType()))
-                return new SelectResponse(sub);
+                return new SelectResponse(transaction, sub);
         }
 
-        throw new DmiTransactionException("DMI Transaction does not contain a response to a select request");
+        throw new DmiTransactionException("DMI Transaction does not contain a response to a select request", transaction);
     }
 
     /**
@@ -69,18 +69,19 @@ public class SelectResponse {
      * ...
      * xx = (table name).END - end of table block
      *
-     * @param subTransaction Sub transaction
+     * @param transaction    DMI Transaction
+     * @param subTransaction SDAFS sub transaction
      */
-    private SelectResponse(DmiSubTransaction subTransaction) {
+    private SelectResponse(DmiTransaction transaction, DmiSubTransaction subTransaction) {
         String[] commands = subTransaction.getCommands();
 
         if (commands.length < 7)
-            throw new DmiTransactionException("Malformed response: sub transaction not long enough");
+            throw new DmiTransactionException("Malformed response: sub transaction not long enough", transaction);
 
         this.table = commands[5];
 
         if (table == null)
-            throw new DmiTransactionException("Malformed response: no table/view specified");
+            throw new DmiTransactionException("Malformed response: no table/view specified", transaction);
 
         assert F.equals(commands[0]);
         assert STANDARD.equals(commands[1]);
@@ -89,13 +90,13 @@ public class SelectResponse {
         // verify transaction size
         Integer subsetSize = parseIntOrNull(commands[6]);
         if (subsetSize == null)
-            throw new DmiTransactionException("Malformed response: subset size is missing");
+            throw new DmiTransactionException("Malformed response: subset size is missing", transaction);
         else if (subsetSize != commands.length - 4)
-            throw new DmiTransactionException("Malformed response: subset size does match response size");
+            throw new DmiTransactionException("Malformed response: subset size does match response size", transaction);
 
         // verify end of table block
         if (!(table + ".END").equals(commands[subsetSize + 3]))
-            throw new DmiTransactionException("Malformed response: " + table + ".END not found where expected");
+            throw new DmiTransactionException("Malformed response: " + table + ".END not found where expected", transaction);
 
         this.keys = Arrays.copyOfRange(commands, 7, commands.length - 1);
     }

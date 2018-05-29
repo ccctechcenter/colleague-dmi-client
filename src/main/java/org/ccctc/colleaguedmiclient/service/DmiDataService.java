@@ -5,7 +5,7 @@ import lombok.NonNull;
 import org.apache.commons.collections4.IteratorUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.ccctc.colleaguedmiclient.exception.DmiTransactionException;
+import org.ccctc.colleaguedmiclient.exception.DmiServiceException;
 import org.ccctc.colleaguedmiclient.model.CddEntry;
 import org.ccctc.colleaguedmiclient.model.ColleagueData;
 import org.ccctc.colleaguedmiclient.model.EntityMetadata;
@@ -316,24 +316,24 @@ public class DmiDataService {
      * Process a DMI response for this data request. The result is a list of records with the field names
      * and data types mapped based on the entity metadata from EntityMetadataService.
      *
-     * @param dmiReponse DMI response
-     * @param appl       Application
-     * @param viewName   View name
-     * @param columns    Columns
+     * @param dmiResponse DMI response
+     * @param appl        Application
+     * @param viewName    View name
+     * @param columns     Columns
      * @return List of records
      */
-    private List<ColleagueData> processResponse(DmiTransaction dmiReponse, String appl, String viewName,
+    private List<ColleagueData> processResponse(DmiTransaction dmiResponse, String appl, String viewName,
                                                 Iterable<String> columns) {
 
         List<ColleagueData> result = new ArrayList<>();
 
         EntityMetadata entityMetadata = entityMetadataService.get(appl, viewName);
-        DataResponse dataResponse = DataResponse.fromDmiTransaction(dmiReponse);
+        DataResponse dataResponse = DataResponse.fromDmiTransaction(dmiResponse);
 
         if (dataResponse.getOrder().size() > 0) {
 
             if (entityMetadata == null)
-                throw new DmiTransactionException("No entity information found for " + appl + "." + viewName);
+                throw new DmiServiceException("No entity information found for " + appl + "." + viewName);
 
             // match field names
             for (String key : dataResponse.getOrder()) {
@@ -344,7 +344,7 @@ public class DmiDataService {
                     CddEntry cddEntry = entityMetadata.getEntries().get(column);
 
                     if (cddEntry == null)
-                        throw new DmiTransactionException("Invalid field requested: " + column + " for " + appl + "." + viewName);
+                        throw new DmiServiceException("Invalid field requested: " + column + " for " + appl + "." + viewName);
 
                     Object value = mapField(record, cddEntry);
                     values.put(column, value);
