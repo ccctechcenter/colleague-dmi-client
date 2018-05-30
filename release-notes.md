@@ -1,5 +1,9 @@
 # Release Notes #
 
+__1.0.6__
+
+* Fix for data reads from application based files (ie ST.VALCODES)
+
 __1.0.5__
 
 * Fix for blank lines at end of DMI transaction on certain error conditions

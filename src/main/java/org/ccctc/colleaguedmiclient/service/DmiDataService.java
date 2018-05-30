@@ -327,7 +327,11 @@ public class DmiDataService {
 
         List<ColleagueData> result = new ArrayList<>();
 
-        EntityMetadata entityMetadata = entityMetadataService.get(appl, viewName);
+        String entityName = viewName;
+        if (viewName.length() >= appl.length() + 1 && (appl + ".").equals(viewName.substring(0, appl.length() + 1)))
+            entityName = "appl." + viewName.substring(appl.length() + 1);
+
+        EntityMetadata entityMetadata = entityMetadataService.get(appl, entityName);
         DataResponse dataResponse = DataResponse.fromDmiTransaction(dmiResponse);
 
         if (dataResponse.getOrder().size() > 0) {
