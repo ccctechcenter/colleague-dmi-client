@@ -473,5 +473,239 @@ class DmiDataServiceSpec extends Specification {
         when: dmiDataService.selectKeys(null, null)
         then: thrown NullPointerException
     }
-    
+
+
+    def "valcodes"() {
+        setup:
+        def cdds = [new CddEntry("VAL.INTERNAL.CODE"          , null, "VALCODES", 10, 1, "A", "10", null, null, "D", "VALS", "K"),
+                    new CddEntry("VAL.EXTERNAL.REPRESENTATION", null, "VALCODES", 32, 2, "A", "25", null, null, "D", "VALS", "D"),
+                    new CddEntry("VAL.ACTION.CODE.1"          , null, "VALCODES", 50, 3, "A", "10", null, null, "D", "VALS", "D"),
+                    new CddEntry("VAL.ACTION.CODE.2"          , null, "VALCODES", 50, 4, "A", "10", null, null, "D", "VALS", "D")
+        ]
+
+        def metadata = new EntityMetadata("LOGI", "1", cdds.collectEntries { i -> [i.name, i]}, cdds as CddEntry[])
+
+        def response1 = new DmiTransaction("account", "DAFS", "ST", "token", "controlid")
+        response1.setInResponseTo("SDAFQ")
+        response1.addSubTransaction(new DmiSubTransaction("SDAFS", 0, [
+                "F",
+                "STANDARD",
+                "SINGLEKEY",
+                null,
+                "SINGLE",
+                "ST.VALCODES",
+                "4",
+                null,
+                "COURSE.STATUSES",
+                null,
+                null,
+                // values for each field
+                String.join(StringUtils.VM as String, ["A", "C"]),
+                String.join(StringUtils.VM as String, ["Active", "Cancelled"]),
+                String.join(StringUtils.VM as String, ["1", "2"]),
+                String.join(StringUtils.VM as String, ["3", "4"]),
+                "ST.VALCODES.END"
+        ] as String[]))
+
+        def response2 = new DmiTransaction("account", "DAFS", "appl", "token", "controlid")
+        response2.setInResponseTo("SDAFQ")
+        response2.addSubTransaction(new DmiSubTransaction("SDAFS", 0, [
+                "F",
+                "STANDARD",
+                "BATCHKEYS",
+                "L",
+                "BATCH",
+                "ST.VALCODES",
+                "29", // size of block from "BATCH" to the end (aka size of entire response minus 4 header lines)
+                null,
+                null,
+                null,
+                null,
+                "1",
+                "2", // number of records returned
+                "2",
+                "TUPLE",
+                "COURSE.STATUSES",
+                "4",
+                null,
+                String.join(StringUtils.VM as String, ["A", "C"]),
+                String.join(StringUtils.VM as String, ["Active", "Cancelled"]),
+                String.join(StringUtils.VM as String, ["1", "2"]),
+                String.join(StringUtils.VM as String, ["3", "4"]),
+                "COURSE.STATUSES.END",
+                "TUPLE",
+                "SECTION.STATUSES",
+                "4",
+                null,
+                String.join(StringUtils.VM as String, ["SA", "SC"]),
+                String.join(StringUtils.VM as String, ["Active", "Cancelled"]),
+                String.join(StringUtils.VM as String, ["S1", "S2"]),
+                null,
+                "SECTION.STATUSES.END",
+                "ST.VALCODES.END"
+        ] as String[]))
+
+        when:
+        def v1 = dmiDataService.valcode("ST", "COURSE.STATUSES")
+        def v2 = dmiDataService.valcodes("ST", ["COURSE.STATUSES", "SECTION.STATUSES"])
+
+        then:
+        2 * entityMetadataService.get("ST", "appl.VALCODES") >> metadata
+        2 * dmiService.send(*_) >>> [response1, response2]
+        v1.key == "COURSE.STATUSES"
+        v1.entries.size() == 2
+        v1.entries[0].internalCode == "A"
+        v1.entries[0].externalRepresentation == "Active"
+        v1.entries[0].action1 == "1"
+        v1.entries[0].action2 == "3"
+        v1.entries[1].internalCode == "C"
+        v1.entries[1].externalRepresentation == "Cancelled"
+        v1.entries[1].action1 == "2"
+        v1.entries[1].action2 == "4"
+        def m = v1.asMap()
+        m.size() == 2
+        m.get("A").externalRepresentation == "Active"
+        m.get("C").externalRepresentation == "Cancelled"
+
+        v2.size() == 2
+        v2[0].key == "COURSE.STATUSES"
+        v2[0].entries.size() == 2
+        v2[0].entries[0].internalCode == "A"
+        v2[0].entries[0].externalRepresentation == "Active"
+        v2[0].entries[0].action1 == "1"
+        v2[0].entries[0].action2 == "3"
+        v2[0].entries[1].internalCode == "C"
+        v2[0].entries[1].externalRepresentation == "Cancelled"
+        v2[0].entries[1].action1 == "2"
+        v2[0].entries[1].action2 == "4"
+        v2[1].key == "SECTION.STATUSES"
+        v2[1].entries.size() == 2
+        v2[1].entries[0].internalCode == "SA"
+        v2[1].entries[0].externalRepresentation == "Active"
+        v2[1].entries[0].action1 == "S1"
+        v2[1].entries[0].action2 == null
+        v2[1].entries[1].internalCode == "SC"
+        v2[1].entries[1].externalRepresentation == "Cancelled"
+        v2[1].entries[1].action1 == "S2"
+        v2[1].entries[1].action2 == null
+
+    }
+
+
+    def "elf translations"() {
+        setup:
+        def cdds = [new CddEntry("ELFT.ORIG.CODE.FIELD", null, "ELF.TRANSLATE.TABLES", 32, 1, "D", "10", null, null, null, null, null),
+                    new CddEntry("ELFT.NEW.CODE.FIELD" , null, "ELF.TRANSLATE.TABLES", 32, 2, "D", "10", null, null, null, null, null),
+                    new CddEntry("ELFT.DESC"           , null, "ELF.TRANSLATE.TABLES", 50, 3, "D", "10", null, null, null, null, null),
+                    new CddEntry("ELFT.COMMENTS"       , null, "ELF.TRANSLATE.TABLES", 250, 4, "A", "65", null, null, null, "ELFT.ORA.COMMENTS", "K"),
+                    new CddEntry("ELFT.ORIG.CODES"     , null, "ELF.TRANSLATE.TABLES", 20, 5, "A", "20", null, null, null, "ELFTBL", "K"),
+                    new CddEntry("ELFT.NEW.CODES"      , null, "ELF.TRANSLATE.TABLES", 30, 6, "A", "20", null, null, null, "ELFTBL", "D"),
+                    new CddEntry("ELFT.ACTION.CODES.1" , null, "ELF.TRANSLATE.TABLES", 80, 7, "A", "20", null, null, null, "ELFTBL", "D"),
+                    new CddEntry("ELFT.ACTION.CODES.2" , null, "ELF.TRANSLATE.TABLES", 80, 8, "A", "20", null, null, null, "ELFTBL", "D")
+
+        ]
+
+        def metadata = new EntityMetadata("PHYS", null, cdds.collectEntries { i -> [i.name, i]}, cdds as CddEntry[])
+
+        def response1 = new DmiTransaction("account", "DAFS", "CORE", "token", "controlid")
+        response1.setInResponseTo("SDAFQ")
+        response1.addSubTransaction(new DmiSubTransaction("SDAFS", 0, [
+                "F",
+                "STANDARD",
+                "SINGLEKEY",
+                null,
+                "SINGLE",
+                "ELF.TRANSLATE.TABLES",
+                "8",
+                null,
+                "TRANS1",
+                null,
+                null,
+                "ORIG.FIELD",
+                "NEW.FIELD",
+                "description",
+                String.join(StringUtils.VM as String, ["comment 1", "comment 2"]),
+                String.join(StringUtils.VM as String, ["A", "B"]),
+                String.join(StringUtils.VM as String, ["C", "D"]),
+                String.join(StringUtils.VM as String, ["1", "2"]),
+                String.join(StringUtils.VM as String, ["3", "4"]),
+                "ELF.TRANSLATE.TABLES.END"
+        ] as String[]))
+
+        def response2 = new DmiTransaction("account", "DAFS", "CORE", "token", "controlid")
+        response2.setInResponseTo("SDAFQ")
+        response2.addSubTransaction(new DmiSubTransaction("SDAFS", 0, [
+                "F",
+                "STANDARD",
+                "BATCHKEYS",
+                "L",
+                "BATCH",
+                "ELF.TRANSLATE.TABLES",
+                "37", // size of block from "BATCH" to the end (aka size of entire response minus 4 header lines)
+                null,
+                null,
+                null,
+                null,
+                "1",
+                "2", // number of records returned
+                "2",
+                "TUPLE",
+                "TRANS1",
+                "8",
+                null,
+                "ORIG.FIELD",
+                "NEW.FIELD",
+                "description",
+                String.join(StringUtils.VM as String, ["comment 1", "comment 2"]),
+                String.join(StringUtils.VM as String, ["A", "B"]),
+                String.join(StringUtils.VM as String, ["C", "D"]),
+                String.join(StringUtils.VM as String, ["1", "2"]),
+                String.join(StringUtils.VM as String, ["3", "4"]),
+                "TRANS1.END",
+                "TUPLE",
+                "TRANS2",
+                "8",
+                null,
+                "ORIG.FIELD",
+                "NEW.FIELD",
+                "description",
+                String.join(StringUtils.VM as String, ["comment 1", "comment 2"]),
+                String.join(StringUtils.VM as String, ["D", "E"]),
+                String.join(StringUtils.VM as String, ["F", "G"]),
+                String.join(StringUtils.VM as String, ["5", "6"]),
+                null,
+                "TRANS2.END",
+                "ELF.TRANSLATE.TABLES.END"
+        ] as String[]))
+
+        when:
+        def v1 = dmiDataService.elfTranslationTable("TRANS1")
+        def v2 = dmiDataService.elfTranslationTables(["TRANS1", "TRANS2"])
+
+        then:
+        2 * entityMetadataService.get("CORE", "ELF.TRANSLATE.TABLES") >> metadata
+        2 * dmiService.send(*_) >>> [response1, response2]
+        v1.key == "TRANS1"
+        v1.description == "description"
+        v1.comments == ["comment 1", "comment 2"]
+        v1.translations.size() == 2
+        v1.translations[0].originalCode == "A"
+        v1.translations[0].newCode == "C"
+        v1.translations[0].action1 == "1"
+        v1.translations[0].action2 == "3"
+        v1.translations[1].originalCode == "B"
+        v1.translations[1].newCode == "D"
+        v1.translations[1].action1 == "2"
+        v1.translations[1].action2 == "4"
+
+        v2.size() == 2
+        v2[0].toString() == v1.toString()
+        def m = v2[1].asMap()
+        m.size() == 2
+        m.get("D").newCode == "F"
+        m.get("E").newCode == "G"
+        m.get("D").action1 == "5"
+        m.get("D").action2 == null
+
+    }
 }
