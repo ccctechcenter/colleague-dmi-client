@@ -363,7 +363,7 @@ class DmiDataServiceSpec extends Specification {
 
     def "batchKeys - empty keys"() {
         when:
-        def result = dmiDataService.batchKeys("APPL", "VEIW", ViewType.LOGI, ["FIELD1"], [])
+        def result = dmiDataService.batchKeys("APPL", "VIEW", ViewType.LOGI, ["FIELD1"], [], null)
 
         then:
         result == []
@@ -417,15 +417,15 @@ class DmiDataServiceSpec extends Specification {
         when: dmiDataService.singleKey("APPL", "VIEW", [], null)
         then: thrown NullPointerException
 
-        when: dmiDataService.singleKey(null, null, null, null, null)
+        when: dmiDataService.singleKey(null, null, null, null, null, null)
         then: thrown NullPointerException
-        when: dmiDataService.singleKey("APPL", null, null, null, null)
+        when: dmiDataService.singleKey("APPL", null, null, null, null, null)
         then: thrown NullPointerException
-        when: dmiDataService.singleKey("APPL", "VIEW", null, null, null)
+        when: dmiDataService.singleKey("APPL", "VIEW", null, null, null, null)
         then: thrown NullPointerException
-        when: dmiDataService.singleKey("APPL", "VIEW", ViewType.BLOB, null, null)
+        when: dmiDataService.singleKey("APPL", "VIEW", ViewType.BLOB, null, null, null)
         then: thrown NullPointerException
-        when: dmiDataService.singleKey("APPL", "VIEW", ViewType.BLOB, [], null)
+        when: dmiDataService.singleKey("APPL", "VIEW", ViewType.BLOB, [], null, null)
         then: thrown NullPointerException
 
         when: dmiDataService.batchKeys(null, null, null, null)
@@ -437,15 +437,15 @@ class DmiDataServiceSpec extends Specification {
         when: dmiDataService.batchKeys("APPL", "VIEW", [], null)
         then: thrown NullPointerException
 
-        when: dmiDataService.batchKeys(null, null, null, null, null)
+        when: dmiDataService.batchKeys(null, null, null, null, null, null)
         then: thrown NullPointerException
-        when: dmiDataService.batchKeys("APPL", null, null, null, null)
+        when: dmiDataService.batchKeys("APPL", null, null, null, null, null)
         then: thrown NullPointerException
-        when: dmiDataService.batchKeys("APPL", "VIEW", null, null, null)
+        when: dmiDataService.batchKeys("APPL", "VIEW", null, null, null, null)
         then: thrown NullPointerException
-        when: dmiDataService.batchKeys("APPL", "VIEW", ViewType.PERM, null, null)
+        when: dmiDataService.batchKeys("APPL", "VIEW", ViewType.PERM, null, null, null)
         then: thrown NullPointerException
-        when: dmiDataService.batchKeys("APPL", "VIEW", ViewType.PERM, [], null)
+        when: dmiDataService.batchKeys("APPL", "VIEW", ViewType.PERM, [], null, null)
         then: thrown NullPointerException
 
         when: dmiDataService.batchSelect(null, null, null, null)
@@ -457,15 +457,15 @@ class DmiDataServiceSpec extends Specification {
         when: dmiDataService.batchSelect("APPL", "VIEW", [], null)
         then: thrown NullPointerException
 
-        when: dmiDataService.batchSelect(null, null, null, null, null)
+        when: dmiDataService.batchSelect(null, null, null, null, null, null)
         then: thrown NullPointerException
-        when: dmiDataService.batchSelect("APPL", null, null, null, null)
+        when: dmiDataService.batchSelect("APPL", null, null, null, null, null)
         then: thrown NullPointerException
-        when: dmiDataService.batchSelect("APPL", "VIEW", null, null, null)
+        when: dmiDataService.batchSelect("APPL", "VIEW", null, null, null, null)
         then: thrown NullPointerException
-        when: dmiDataService.batchSelect("APPL", "VIEW", ViewType.PERM, null, null)
+        when: dmiDataService.batchSelect("APPL", "VIEW", ViewType.PERM, null, null, null)
         then: thrown NullPointerException
-        when: dmiDataService.batchSelect("APPL", "VIEW", ViewType.PERM, [], null)
+        when: dmiDataService.batchSelect("APPL", "VIEW", ViewType.PERM, [], null, null)
         then: thrown NullPointerException
 
         when: dmiDataService.selectKeys(null)
