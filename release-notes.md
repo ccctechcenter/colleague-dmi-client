@@ -3,6 +3,7 @@
 __1.0.6__
 
 * Fix for data reads from application based files (ie ST.VALCODES)
+* New methods in DmiDataService for reading valcodes and ELF translation tables
 
 __1.0.5__
 
