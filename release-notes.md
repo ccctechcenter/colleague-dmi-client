@@ -1,5 +1,10 @@
 # Release Notes #
 
+__1.0.7__
+
+* Support for alternate CDD view name for queries where the physical file name and CDD entries are not the same.
+  For example, CAST.MIS.PARMS which is a view of the physical file ST.PARMS.
+
 __1.0.6__
 
 * Fix for data reads from application based files (ie ST.VALCODES)
