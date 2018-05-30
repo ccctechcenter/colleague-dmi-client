@@ -97,22 +97,23 @@ public class DmiDataService {
      */
     public ColleagueData singleKey(@NonNull String appl, @NonNull String viewName, @NonNull Iterable<String> columns,
                                    @NonNull String key) {
-        return singleKey(appl, viewName, ViewType.PHYS, columns, key);
+        return singleKey(appl, viewName, ViewType.PHYS, columns, key, null);
     }
 
 
     /**
      * Select a single record from a view by selection primary key.
      *
-     * @param appl     Application
-     * @param viewName View
-     * @param columns  Columns
-     * @param viewType View type
-     * @param key      Primary key
+     * @param appl                Application
+     * @param viewName            View
+     * @param columns             Columns
+     * @param viewType            View type
+     * @param key                 Primary key
+     * @param cddViewNameOverride View name override in CDD
      * @return Record
      */
     public ColleagueData singleKey(@NonNull String appl, @NonNull String viewName, @NonNull ViewType viewType,
-                                   @NonNull Iterable<String> columns, @NonNull String key) {
+                                   @NonNull Iterable<String> columns, @NonNull String key, String cddViewNameOverride) {
         SessionCredentials creds = dmiService.getSessionCredentials();
         SingleKeyRequest request = new SingleKeyRequest(dmiService.getAccount(), creds.getToken(), creds.getControlId(),
                 dmiService.getSharedSecret(), viewName, viewType, columns, key);
@@ -120,7 +121,7 @@ public class DmiDataService {
         logSend("singleKey", viewName, columns, Collections.singleton(key), null);
 
         DmiTransaction dmiResponse = dmiService.send(request);
-        List<ColleagueData> data = processResponse(dmiResponse, appl, viewName, columns);
+        List<ColleagueData> data = processResponse(dmiResponse, appl, viewName, columns, cddViewNameOverride);
 
         logReceive("singleKey", viewName, data.size());
 
@@ -142,7 +143,7 @@ public class DmiDataService {
      */
     public List<ColleagueData> batchKeys(@NonNull String appl, @NonNull String viewName, @NonNull Iterable<String> columns,
                                          @NonNull Iterable<String> keys) {
-        return batchKeys(appl, viewName, ViewType.PHYS, columns, keys);
+        return batchKeys(appl, viewName, ViewType.PHYS, columns, keys, null);
     }
 
 
@@ -151,15 +152,17 @@ public class DmiDataService {
      * <p>
      * For larger requests, records are read in batches as large read requsts can overwhelm and even crash the DMI.
      *
-     * @param appl     Application
-     * @param viewName View
-     * @param columns  Columns
-     * @param viewType View type
-     * @param keys     Primary keys
+     * @param appl                Application
+     * @param viewName            View
+     * @param columns             Columns
+     * @param viewType            View type
+     * @param keys                Primary keys
+     * @param cddViewNameOverride View name override in CDD
      * @return List of records
      */
     public List<ColleagueData> batchKeys(@NonNull String appl, @NonNull String viewName, @NonNull ViewType viewType,
-                                         @NonNull Iterable<String> columns, @NonNull Iterable<String> keys) {
+                                         @NonNull Iterable<String> columns, @NonNull Iterable<String> keys,
+                                         String cddViewNameOverride) {
 
         List<String> keysList = (keys instanceof List) ? (List) keys : IteratorUtils.toList(keys.iterator());
 
@@ -175,7 +178,7 @@ public class DmiDataService {
             logSend("batchKeys", viewName, columns, keys, null);
 
             DmiTransaction dmiReponse = dmiService.send(request);
-            List<ColleagueData> data = processResponse(dmiReponse, appl, viewName, columns);
+            List<ColleagueData> data = processResponse(dmiReponse, appl, viewName, columns, cddViewNameOverride);
 
             logReceive("batchKeys", viewName, data.size());
 
@@ -197,7 +200,7 @@ public class DmiDataService {
 
                 DmiTransaction dmiReponse = dmiService.send(request);
 
-                List<ColleagueData> data = processResponse(dmiReponse, appl, viewName, columns);
+                List<ColleagueData> data = processResponse(dmiReponse, appl, viewName, columns, cddViewNameOverride);
 
                 logReceive("batchKeys", viewName, data.size());
 
@@ -226,7 +229,7 @@ public class DmiDataService {
      */
     public List<ColleagueData> batchSelect(@NonNull String appl, @NonNull String viewName,
                                            @NonNull Iterable<String> columns, String criteria) {
-        return batchSelect(appl, viewName, ViewType.PHYS, columns, criteria);
+        return batchSelect(appl, viewName, ViewType.PHYS, columns, criteria, null);
     }
 
 
@@ -239,20 +242,21 @@ public class DmiDataService {
      * <p>
      * For larger requests, records are read in batches as large read requests can overwhelm and even crash the DMI.
      *
-     * @param appl     Application
-     * @param viewName View
-     * @param viewType View type
-     * @param columns  Columns
-     * @param criteria Selection criteria
+     * @param appl                Application
+     * @param viewName            View
+     * @param viewType            View type
+     * @param columns             Columns
+     * @param criteria            Selection criteria
+     * @param cddViewNameOverride View name override in CDD
      * @return List of records
      */
     public List<ColleagueData> batchSelect(@NonNull String appl, @NonNull String viewName, @NonNull ViewType viewType,
-                                           @NonNull Iterable<String> columns, String criteria) {
+                                           @NonNull Iterable<String> columns, String criteria, String cddViewNameOverride) {
 
         // get keys
         String[] keys = selectKeys(viewName, criteria);
         Iterable<String> keysIterable = () -> Arrays.stream(keys).iterator();
-        return batchKeys(appl, viewName, viewType, columns, keysIterable);
+        return batchKeys(appl, viewName, viewType, columns, keysIterable, cddViewNameOverride);
 
         ///
         /// Due to the capability of overwhelming the server with a large select request, this functionality has been removed
@@ -401,20 +405,24 @@ public class DmiDataService {
      *
      * @param dmiResponse DMI response
      * @param appl        Application
-     * @param viewName    View name
+     * @param viewName
      * @param columns     Columns
+     * @param cddViewNameOverride View name override in CDD
      * @return List of records
      */
     private List<ColleagueData> processResponse(DmiTransaction dmiResponse, String appl, String viewName,
-                                                Iterable<String> columns) {
+                                                Iterable<String> columns, String cddViewNameOverride) {
 
         List<ColleagueData> result = new ArrayList<>();
 
-        String entityName = viewName;
-        if (viewName.length() >= appl.length() + 1 && (appl + ".").equals(viewName.substring(0, appl.length() + 1)))
-            entityName = "appl." + viewName.substring(appl.length() + 1);
+        if (cddViewNameOverride == null) {
+            if (viewName.length() >= appl.length() + 1 && (appl + ".").equals(viewName.substring(0, appl.length() + 1)))
+                cddViewNameOverride = "appl." + viewName.substring(appl.length() + 1);
+            else
+                cddViewNameOverride = viewName;
+        }
 
-        EntityMetadata entityMetadata = entityMetadataService.get(appl, entityName);
+        EntityMetadata entityMetadata = entityMetadataService.get(appl, cddViewNameOverride);
         DataResponse dataResponse = DataResponse.fromDmiTransaction(dmiResponse);
 
         if (dataResponse.getOrder().size() > 0) {
