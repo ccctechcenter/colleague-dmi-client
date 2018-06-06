@@ -120,9 +120,7 @@ class DmiServiceSpec extends Specification{
         1 * socket.getOutputStream() >> os
         1 * socket.getInputStream() >> is
         1 * os.write(*_)
-        1 * socket.close()
-        1 * os.close()
-        1 * os.flush()
+        1 * socketFactory.release(socket)
         0 * _
 
         creds.token == token
@@ -176,9 +174,7 @@ class DmiServiceSpec extends Specification{
         2 * socket.getOutputStream() >> os
         2 * socket.getInputStream() >>> [is1, is2]
         2 * os.write(*_)
-        2 * socket.close()
-        2 * os.close()
-        2 * os.flush()
+        2 * socketFactory.release(socket)
         0 * _
         creds1 != creds2
     }
@@ -211,9 +207,7 @@ class DmiServiceSpec extends Specification{
         1 * socket.getOutputStream() >> os
         1 * socket.getInputStream() >> is1
         1 * os.write(*_)
-        1 * socket.close()
-        1 * os.close()
-        1 * os.flush()
+        1 * socketFactory.release(socket)
         0 * _
         assert creds1 == creds2
 
@@ -232,9 +226,7 @@ class DmiServiceSpec extends Specification{
         2 * socket.getOutputStream() >> os
         2 * socket.getInputStream() >>> [is2, is3]
         2 * os.write(*_)
-        2 * socket.close()
-        2 * os.close()
-        2 * os.flush()
+        2 * socketFactory.release(socket)
         0 * _
         assert creds1 != creds2
     }
@@ -295,9 +287,7 @@ class DmiServiceSpec extends Specification{
         1 * socket.getOutputStream() >> os
         1 * socket.getInputStream() >> is
         1 * os.write(*_)
-        1 * os.close()
-        1 * os.flush()
-        1 * socket.close()
+        1 * socketFactory.release(socket)
         0 * _
         result != null
     }
@@ -325,7 +315,7 @@ class DmiServiceSpec extends Specification{
         then:
         2 * socketFactory.getSocket(_) >> socket
         2 * socket.getOutputStream() >> { throw new Exception() }
-        2 * socket.recycle()
+        2 * socketFactory.recycle(socket)
         0 * _
         thrown DmiServiceException
 
@@ -337,9 +327,7 @@ class DmiServiceSpec extends Specification{
         2 * socketFactory.getSocket(_) >> socket
         2 * socket.getOutputStream() >> os
         2 * socket.getInputStream() >>  { throw new Exception() }
-        2 * socket.recycle()
-        2 * os.close()
-        2 * os.flush()
+        2 * socketFactory.recycle(socket)
         0 * _
         thrown DmiServiceException
 
@@ -369,9 +357,7 @@ class DmiServiceSpec extends Specification{
         3 * socket.getOutputStream() >> os
         3 * socket.getInputStream() >>> [securityResponse, goodLoginResponse, goodDataResponse]
         3 * os.write(*_)
-        3 * socket.close()
-        3 * os.close()
-        3 * os.flush()
+        3 * socketFactory.release(socket)
         0 * _
         transaction1.token[0] == token
         transaction1.controlId[0] == controlId
@@ -389,9 +375,7 @@ class DmiServiceSpec extends Specification{
         3 * socket.getOutputStream() >> os
         3 * socket.getInputStream() >>> [securityResponse, goodLoginResponse, goodDataResponse]
         3 * os.write(*_)
-        3 * socket.close()
-        3 * os.close()
-        3 * os.flush()
+        3 * socketFactory.release(socket)
         0 * _
         transaction2.token == null
     }
@@ -415,9 +399,7 @@ class DmiServiceSpec extends Specification{
         1 * socket.getOutputStream() >> os
         1 * socket.getInputStream() >> is
         1 * os.write(*_)
-        1 * socket.close()
-        1 * os.close()
-        1 * os.flush()
+        1 * socketFactory.release(socket)
         0 * _
         thrown DmiServiceException
     }
@@ -443,9 +425,7 @@ class DmiServiceSpec extends Specification{
         2 * socket.getOutputStream() >> os
         2 * socket.getInputStream() >>> [is1, is2]
         2 * os.write(*_)
-        2 * socket.close()
-        2 * os.close()
-        2 * os.flush()
+        2 * socketFactory.release(socket)
         0 * _
         thrown DmiServiceException
     }
@@ -466,9 +446,7 @@ class DmiServiceSpec extends Specification{
         2 * socket.getOutputStream() >> os
         2 * socket.getInputStream() >>> [is1, is2]
         2 * os.write(*_)
-        2 * socket.close()
-        2 * os.close()
-        2 * os.flush()
+        2 * socketFactory.release(socket)
         0 * _
     }
 

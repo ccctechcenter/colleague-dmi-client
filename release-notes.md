@@ -1,5 +1,9 @@
 # Release Notes #
 
+__1.0.8__
+
+* Socket factory bug fixes. Trace logging added to socket factory.
+
 __1.0.7__
 
 * Support for alternate CDD view name for queries where the physical file name and CDD entries are not the same.
