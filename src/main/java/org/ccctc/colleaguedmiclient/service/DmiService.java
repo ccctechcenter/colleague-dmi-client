@@ -309,14 +309,12 @@ public class DmiService implements Closeable {
     private DmiTransaction doSend(DmiTransaction transaction, boolean forceNewSocket) {
         Exception ex = null;
         PooledSocket socket = null;
-        DataOutputStream os = null;
-        DataInputStream is = null;
         DmiTransaction response = null;
 
         try {
             socket = socketFactory.getSocket(forceNewSocket);
-            os = new DataOutputStream(socket.getOutputStream());
-            is = new DataInputStream(socket.getInputStream());
+            DataOutputStream os = new DataOutputStream(socket.getOutputStream());
+            DataInputStream is = new DataInputStream(socket.getInputStream());
             byte[] bytes = transaction.toDmiBytes();
 
             if (log.isTraceEnabled())
@@ -339,16 +337,12 @@ public class DmiService implements Closeable {
             if (log.isTraceEnabled() && response != null && response.getRawResponse() != null)
                 log.trace("DMI recv: " + StringUtils.join(StringUtils.FM, response.getRawResponse()));
 
-            try {
-                if (socket != null) {
-                    // recycle the socket on exception
-                    if (ex != null) socket.recycle();
-                    else socket.close();
-                }
-            } catch (IOException ignored) { }
+            if (socket != null) {
+                // recycle the socket on exception
+                if (ex != null) socketFactory.recycle(socket);
+                else socketFactory.release(socket);
+            }
 
-            try { if (os != null) os.close(); } catch (IOException ignored) { }
-            try { if (is != null) is.close(); } catch (IOException ignored) { }
         }
 
         return response;

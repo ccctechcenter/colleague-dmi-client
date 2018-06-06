@@ -113,7 +113,7 @@ class SocketSpec extends Specification {
         // one socket is closed, then re-used
         when:
         def s = f.getSocket(false)
-        s.close()
+        f.release(s)
         def s2 = f.getSocket(false)
 
         then:
@@ -130,7 +130,7 @@ class SocketSpec extends Specification {
         // one socket is closed, then re-used
         when:
         def s = f.getSocket(false)
-        s.close()
+        f.release(s)
         def s2 = f.getSocket(true)
 
         then:
@@ -162,9 +162,9 @@ class SocketSpec extends Specification {
         assert f.available == 0
 
         // close s3 and s4 - sleep between closes to ensure s3 is released first
-        s3.close()
+        f.release(s3)
         sleep(100)
-        s4.close()
+        f.release(s4)
 
         assert f.used == 0
         assert f.available == 2
@@ -191,7 +191,7 @@ class SocketSpec extends Specification {
 
         when:
         def s = f.getSocket(false)
-        s.recycle()
+        f.recycle(s)
         def s2 = f.getSocket(false)
 
         then:
@@ -251,7 +251,7 @@ class SocketSpec extends Specification {
         when:
         // release 5 connections
         GParsPool.withPool {
-            sockets.eachParallel { it.close() }
+            sockets.eachParallel { f.release(it) }
         }
 
         then:
@@ -273,7 +273,7 @@ class SocketSpec extends Specification {
 
         when:
         // release 5 connections
-        sockets3.each { it.close() }
+        sockets3.each { f.release(it) }
 
         then:
         f.used == 5
@@ -283,25 +283,13 @@ class SocketSpec extends Specification {
         f.close()
     }
 
-    def "pooled socket close without factory"() {
-        setup:
-        def s = new PooledSocket(testHost, testPort, null, 5000, 3600)
-
-        when:
-        s.close()
-
-        then:
-        // without a factory the connection is closed instead of released back to factory
-        s.isClosed()
-    }
-
     def "close factory - used and available sockets should be emptied"() {
         setup:
         def f = new PoolingSocketFactory(testHost, testPort, 10, false, null)
         def s1 = f.getSocket(false)
         def s2 = f.getSocket(false)
 
-        s2.close()
+        f.release(s2)
 
         when:
         f.close()
@@ -311,5 +299,51 @@ class SocketSpec extends Specification {
         s2.isClosed()
         f.available == 0
         f.used == 0
+    }
+
+    def "socket close exceptions"() {
+        setup:
+        def m1 = Mock(PooledSocket)
+        def m2 = Mock(PooledSocket)
+        def m3 = Mock(PooledSocket)
+        def f = new PoolingSocketFactory(testHost, testPort, 10, false, null)
+        f.@available.add(m1)
+        f.@available.add(m2)
+        f.@available.add(m3)
+
+        when:
+        def s1 = f.getSocket(false)
+        def s2 = f.getSocket(false)
+
+        assert s1 == m2
+        assert s2 == m3
+
+        f.@used.remove(m2)
+
+        f.release(s1)
+        f.recycle(s2)
+
+        then:
+
+        // m1 - already expired, closing throws an exception (does not go back to pool)
+        1 * m1.isExpired() >> true
+        1 * m1.close() >> { throw new IOException("whoopsies") }
+
+        // m2 - available and released back into pool
+        1 * m2.isExpired() >> false
+        1 * m2.isClosed() >> false
+
+        // m3 - recycled
+        1 * m3.isExpired() >> false
+        1 * m3.isClosed() >> false
+        1 * m3.close() >> { throw new IOException("whoopsies") }
+
+        _ * _.equals(*_)
+
+        0 * _
+        f.available == 1
+        f.used == 0
+
+
     }
 }

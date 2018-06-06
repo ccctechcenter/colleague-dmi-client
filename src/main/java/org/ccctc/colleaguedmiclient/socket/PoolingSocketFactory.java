@@ -2,10 +2,11 @@ package org.ccctc.colleaguedmiclient.socket;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +28,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * @see PooledSocket
  */
 public class PoolingSocketFactory implements Closeable {
+
+    private final Log log = LogFactory.getLog(PoolingSocketFactory.class);
 
     /**
      * Host name / IP Address
@@ -85,11 +88,11 @@ public class PoolingSocketFactory implements Closeable {
     /**
      * Create a PoolingSocketFactory
      *
-     * @param host                    Host name or IP address
-     * @param port                    Host port
-     * @param poolSize                Pool size
-     * @param secure                  Secure (SSL) connection?
-     * @param hostnameOverride        Host name override ?
+     * @param host             Host name or IP address
+     * @param port             Host port
+     * @param poolSize         Pool size
+     * @param secure           Secure (SSL) connection?
+     * @param hostnameOverride Host name override ?
      */
     public PoolingSocketFactory(String host, int port, int poolSize, boolean secure, String hostnameOverride) {
 
@@ -142,35 +145,63 @@ public class PoolingSocketFactory implements Closeable {
      *                         from the pool.
      */
     public PooledSocket getSocket(boolean forceNewSocket) throws SocketException {
+        lock.lock();
         try {
-            lock.lock();
+            log.trace("New socket requested, used=" + this.getUsed() + ", available=" + this.getAvailable()
+                    + ", waiting=" + lock.getWaitQueueLength(isFull));
+
             while (used.size() >= poolSize) {
+                log.trace("Waiting for available socket");
                 if (!isFull.await(poolTimeoutMs, TimeUnit.MILLISECONDS)) {
-                    throw new SocketException("Timeout exceeded waiting for available connection");
+                    throw new SocketException("Timeout exceeded waiting for available socket");
                 }
             }
 
-            // loop through available sockets, recycle any that are expired
+            // loop through available sockets, closing any that are expired
             PooledSocket socket = available.poll();
             while (socket != null) {
-                if (socket.isExpired())
-                    try { socket.recycle(); } catch (IOException ignored) { }
-                else if (!socket.isClosed())
+                log.trace("Available socket polled: " + socket.toString());
+
+                if (socket.isExpired()) {
+                    try {
+                        log.trace("Available socket expired, closing: " + socket.toString());
+                        socket.close();
+                    } catch (IOException e) {
+                        log.error("Error closing expired socket", e);
+                    }
+                } else if (socket.isClosed()) {
+                    log.trace("Available socket already closed, skipping: " + socket.toString());
+                } else {
                     break;
+                }
 
                 socket = available.poll();
             }
 
-            // if we're forcing a new socket, recycle the one we got from the available pool
+            // if we're forcing a new socket, close and discard the one we got from the available pool to make room
             if (forceNewSocket && socket != null) {
-                try { socket.recycle(); } catch (IOException ignored) { }
+                try {
+                    log.trace("Closing available socket (force new): " + socket.toString());
+                    socket.close();
+                } catch (IOException e) {
+                    log.error("Error closing socket", e);
+                }
+
                 socket = null;
             }
 
-            if (socket == null)
+            // create a new socket
+            if (socket == null) {
                 socket = newSocket();
+                log.trace("New socket created: " + socket.toString());
+            } else {
+                log.trace("Available socket re-used: " + socket.toString());
+            }
 
             used.add(socket);
+
+            if (used.size() < poolSize)
+                isFull.signal();
 
             return socket;
         } catch (InterruptedException e) {
@@ -184,7 +215,7 @@ public class PoolingSocketFactory implements Closeable {
 
 
     /**
-     * Close the connection factory, closing all sockets in the pool.
+     * Close the connection factory, closing all sockets in the pool (including any sockets in use!)
      */
     public synchronized void close() {
         lock.lock();
@@ -192,23 +223,25 @@ public class PoolingSocketFactory implements Closeable {
             // close all available sockets
             for (PooledSocket p = available.poll(); p != null; p = available.poll()) {
                 try {
-                    if (!p.isClosed()) {
-                        p.recycle();
-                    }
-                } catch (IOException ignored) {
+                    log.trace("Closing available socket: " + p.toString());
+                    p.close();
+                } catch (IOException e) {
+                    log.error("Error closing socket", e);
                 }
             }
 
-            // close all "used" connections
-            // (a new list must be used to avoid ConcurrentModificationException)
+            // close all used sockets (a new list must be used to avoid ConcurrentModificationException)
             for (PooledSocket p : new ArrayList<>(used)) {
                 try {
-                    if (!p.isClosed()) p.recycle();
-                } catch (IOException ignored) {
+                    log.trace("Closing used socket: " + p.toString());
+                    p.close();
+                } catch (IOException e) {
+                    log.error("Error closing socket", e);
                 }
             }
 
             used.clear();
+            isFull.signalAll();
         } finally {
             lock.unlock();
         }
@@ -222,7 +255,8 @@ public class PoolingSocketFactory implements Closeable {
      * @throws IOException if there is an error
      */
     private PooledSocket newSocket() throws IOException {
-        PooledSocket s = new PooledSocket(host, port, this, this.socketConnectTimeoutMs, this.socketExpirationMs);
+        log.trace("Creating new socket");
+        PooledSocket s = new PooledSocket(host, port, this.socketConnectTimeoutMs, this.socketExpirationMs);
         s.setKeepAlive(true);
         s.setSoTimeout(socketReadTimeoutMs);
         return s;
@@ -230,18 +264,39 @@ public class PoolingSocketFactory implements Closeable {
 
 
     /**
-     * Release a socket from use. This moves the socket from "used" to "available", unless the socket has been closed
-     * in which case it is discarded.
+     * Release a socket from use. This moves the socket from "used" to "available".
      *
      * @param socket Socket to release
      */
-    void release(PooledSocket socket) {
+    public void release(PooledSocket socket) {
         lock.lock();
         try {
-            if (used.remove(socket)) {
-                if (!socket.isClosed())
-                    available.add(socket);
+            log.trace("Releasing socket back to pool: " + socket.toString());
+            used.remove(socket);
+            available.add(socket);
+            isFull.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Recycle a socket that is in use. This wil remove it from the "used" pool, close it and discard it.
+     *
+     * @param socket Socket to recycle
+     */
+    public void recycle(PooledSocket socket) {
+        lock.lock();
+        try {
+            log.trace("Removing socket from pool and closing: " + socket.toString());
+            used.remove(socket);
+
+            try {
+                socket.close();
+            } catch (IOException e) {
+                log.error("Error closing socket", e);
             }
+
             isFull.signal();
         } finally {
             lock.unlock();
