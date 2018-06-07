@@ -1,5 +1,10 @@
 # Release Notes #
 
+__1.0.9__
+
+* Fixed a bug that prevented BatchKeys from removing records that were not found from result set
+
+
 __1.0.8__
 
 * Socket factory bug fixes. Trace logging added to socket factory.

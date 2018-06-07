@@ -171,7 +171,7 @@ public class DataResponse {
             // get header of the record, determine length and start and end read positions
             String tuple = commands[startPos];
             String key = commands[startPos + 1];
-            String errorCode = commands[startPos + 1];
+            String errorCode = commands[startPos + 3];
 
             // handle errors - 00011 is not found, 00012 is read error
             if (ERROR_00011.equals(errorCode)) continue;
