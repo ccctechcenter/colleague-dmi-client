@@ -14,6 +14,7 @@ import java.util.List;
 @Entity(appl = "ST", name = "TERMS")
 public class TermsRecord extends ColleagueRecord {
 
+    Integer termReportingYear;
     String termDesc;
     String termSession;
     LocalDate termStartDate;
