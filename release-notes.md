@@ -1,5 +1,9 @@
 # Release Notes #
 
+__1.1.0__
+
+* Added DmiEntityService to make reading into POJOs and performing joins simpler
+
 __1.0.9__
 
 * Fixed a bug that prevented BatchKeys from removing records that were not found from result set
