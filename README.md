@@ -91,12 +91,13 @@ int poolSize = 10;
 try (DmiService dmiService = new DmiService(account, username, password, ipAddress, port, secure, hostnameOverride, sharedSecret, poolSize)) {
     DmiCTXService dmiCTXService = new DmiCTXService(dmiService);
     DmiDataService dmiDataService = new DmiDataService(dmiService, dmiCTXService);
+    DmiEntityService dmiEntityService = new DmiEntityService(dmiDataService);
     
     // perform code here ... 
 }
 ```
 
-> See [Samples](/samples) for this source code
+> See [Sample](/src/main/java/org/ccctc/colleaguedmiclient/sample) source code for usage of DMI Entity Service.
 >
 > Important note: `DmiService` implements `Closeable`. It's important to wrap it in a try-with-resources statement like
 > above or a try-finally block (calling `close()` in `finally`), to ensure the DMI Service is closed. This will ensure
@@ -171,6 +172,17 @@ public class DmiClientConfig {
 
         if (metadataExpirationSeconds >= 0)
             d.getEntityMetadataService().setCacheExpirationSeconds(metadataExpirationSeconds);
+
+        return d;
+    }
+    
+    @Bean
+    public DmiEntityService dmiEntityService(DmiDataService dmiDataService,
+                                             @Value("${dmi.metadata.expiration.seconds:-1}") int metadataExpirationSeconds) {
+        DmiEntityService d = new DmiEntityService(dmiDataService);
+
+        if (metadataExpirationSeconds >= 0)
+            d.setCacheExpirationSeconds(metadataExpirationSeconds);
 
         return d;
     }
@@ -267,6 +279,15 @@ groups associated fields of a transaction into their proper "associations".
 
 By default, `DmiCTXService` will instantiate a `CTXMetadataService` when it is created, though you have the option of
 creating your own and passing it to the constructor.
+
+### DMI Entity Service ###
+
+The `DmiEntityService` allows mapping of Colleague data into POJOs, including support for single-valued and multi-valued
+joins, associations and other Colleague constructs. This is especially useful for handling the sometimes complicated task
+of joining data from multiple tables together.  
+
+See [Sample](/src/main/java/org/ccctc/colleaguedmiclient/sample) folder for samples of how this works. The sample provided
+reads data from a dozen or so tables for data associated with enrollments (STUDENT.ACAD.CRED).
 
 ## APPENDIX A: Data Types ##
 
