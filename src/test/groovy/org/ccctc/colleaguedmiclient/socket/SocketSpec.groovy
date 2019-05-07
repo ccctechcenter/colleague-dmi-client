@@ -5,9 +5,19 @@ import spock.lang.Specification
 
 class SocketSpec extends Specification {
 
+    static String goodResponse
+    static token = "123456789012345"
+    static controlId = "1234567890"
     String testHost
     int testPort
     ServerSocket serverSocket
+
+
+    def setupSpec() {
+        // good response based on actual DMI response with credentials modified
+        goodResponse = 'DMIþ1.4þLGRSþdev0_rtþUTþ' + token + 'þþ' + controlId + 'ýj0þ18394þ1628þHOSTþLGRQþþDMI_PROCESS_LGRQþ18394þ1628þSLGRSþ12þ0þ1þþþþþþþþSLGRS.ENDþSSTATEþ14þ0þ0þþþþþþþþþþSSTATE.END'
+        goodResponse = "#" + (goodResponse.size() + 5) + "#" + goodResponse + "#END#"
+    }
 
     def setup() {
         serverSocket = new ServerSocket(0)
@@ -51,6 +61,38 @@ class SocketSpec extends Specification {
         then:
         def i = thrown SocketException
         i.getMessage().contains("Timeout")
+
+        cleanup:
+        f.close()
+    }
+
+    def "socket"() {
+        setup:
+        def f = new PoolingSocketFactory(testHost, testPort, 1, false, null)
+
+        when:
+        def s = f.getSocket(false)
+
+        then:
+        f.poolSize == 1
+        s.getOutputStream() instanceof OutputStream
+        s.getInputStream() instanceof InputStream
+
+        cleanup:
+        f.close()
+    }
+
+    def "secure socket"() {
+        setup:
+        def f = new PoolingSocketFactory(testHost, testPort, 1, true, null)
+
+        when:
+        def s = f.getSocket(false)
+
+        then:
+        f.poolSize == 1
+        s.getOutputStream() instanceof OutputStream
+        s.getInputStream() instanceof InputStream
 
         cleanup:
         f.close()
