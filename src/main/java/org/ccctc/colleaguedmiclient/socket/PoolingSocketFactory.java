@@ -5,6 +5,8 @@ import lombok.Setter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import javax.net.SocketFactory;
+import javax.net.ssl.SSLSocketFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.SocketException;
@@ -81,6 +83,7 @@ public class PoolingSocketFactory implements Closeable {
     private final ReentrantLock lock = new ReentrantLock(true);
     private final Condition isFull = lock.newCondition();
 
+    private final SocketFactory socketFactory;
     private final Queue<PooledSocket> available;
     private final List<PooledSocket> used;
 
@@ -103,6 +106,9 @@ public class PoolingSocketFactory implements Closeable {
         this.poolSize = poolSize;
         this.secure = secure;
         this.hostnameOverride = hostnameOverride;
+        socketFactory = (secure)
+                    ? (SSLSocketFactory) SSLSocketFactory.getDefault()
+                    : SocketFactory.getDefault();
 
         available = new ConcurrentLinkedQueue<>();
         used = new ArrayList<>();
@@ -256,7 +262,7 @@ public class PoolingSocketFactory implements Closeable {
      */
     private PooledSocket newSocket() throws IOException {
         log.trace("Creating new socket");
-        PooledSocket s = new PooledSocket(host, port, this.socketConnectTimeoutMs, this.socketExpirationMs);
+        PooledSocket s = new PooledSocket(host, port, socketConnectTimeoutMs, socketExpirationMs, socketFactory);
         s.setKeepAlive(true);
         s.setSoTimeout(socketReadTimeoutMs);
         return s;
