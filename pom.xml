@@ -4,9 +4,44 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.ccctc</groupId>
+    <groupId>org.ccctechcenter</groupId>
     <artifactId>colleague-dmi-client</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.1</version>
+
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>The Colleague DMI Client is a java library that handles communications with the Colleague DMI</description>
+    <url>https://github.com/ccctechcenter/colleague-dmi-client</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>http://www.opensource.org/licenses/mit-license.php</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+      <developer>
+        <name></name>
+        <email>developer@ccctechcenter.org</email>
+        <organization>CCCTechcenter</organization>
+        <organizationUrl>https://ccctechcenter.org</organizationUrl>
+      </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:ssh://git@github.com:ccctechcenter/colleague-dmi-client.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:ccctechcenter/colleague-dmi-client.git</developerConnection>
+        <url>https://github.com/ccctechcenter/colleague-dmi-client</url>
+    </scm>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub CCCTechcenter Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/ccctechcenter/colleague-dmi-client</url>
+        </repository>
+    </distributionManagement>
 
     <properties>
         <java.version>1.8</java.version>

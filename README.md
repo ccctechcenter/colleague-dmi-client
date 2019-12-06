@@ -1,3 +1,9 @@
+```
+Copyright (c) 2019 California Community Colleges Technology Center
+Licensed under the MIT license.
+A copy of this license may be found at https://opensource.org/licenses/mit-license.php
+```
+
 # Colleague DMI Client #
 
 The Colleague DMI Client is a java library that handles communicatoins with the Colleague DMI
@@ -7,18 +13,32 @@ The Colleague DMI Client is a java library that handles communicatoins with the 
 See [Release Notes](release-notes.md)
 
 ## Compilation ##
-    
+
     mvn clean test     - run unit tests and code coverage
     mvn clean compile  - compile
     mvn clean package  - package (jar) and create javadoc + sources
 
-## Nexus Repository and Jenkins Integration ##
+## Github Package Registry ##
 
-Jenkins is used to test, build and publish snaphots and releases to the nexus.ccctechcenter.org repository. 
+The github package registry associated with this repository is used to store the published maven package for use as a dependency by other projects
+
+### Publishing a new version of the colleage-dmi-client:
+
+Jenkins has been integrated with this project to perfor build, test, and publish actions.
+
+Prerequisites: https://help.github.com/en/github/managing-packages-with-github-package-registry/configuring-apache-maven-for-use-with-github-package-registry
+
+When a push to master occurs, _and_ the following criteria are met, a new version is published:
+- the version in the pom has been incremented (cannot match any prior published version)
+- the version is not a snapshot version
+
+Alternatively (and assuming Prerequisites have been met locally as wel), a package can be published by executing the following command:
+
+    mvn deploy
 
 ## What is the DMI? ##
 
-Requests to Colleague from external services follow the client-server architecture with the DMI (Datatel Messaging 
+Requests to Colleague from external services follow the client-server architecture with the DMI (Datatel Messaging
 Interface) being the server. The client sends a request (log me in, retrieve data, run code, etc) and the DMI
 routes the request to the appropriate place and returns the result. Under the hood, the application and data layers
 in Colleague are separate, so one request might go to the database, one might go to the application.
@@ -29,47 +49,40 @@ in Colleague are separate, so one request might go to the database, one might go
 
 - Uses a connection pool to maintain connectivity to the DMI as well as limit the maximum number of concurrent
   connections
-  
-- Handles the following types of requests: 
+
+- Handles the following types of requests:
 
     * Read a single record from a table by primary key
-    * Read multiple records from a table by primary key(s) and/or selection criteria 
-    * Select primary keys from a table based on selection criteria and/or limiting keys 
+    * Read multiple records from a table by primary key(s) and/or selection criteria
+    * Select primary keys from a table based on selection criteria and/or limiting keys
     * Run a Colleague Transaction (execute code in the application)
-  
+
 ## Adding the Colleague DMI Client to your Project ##
 
-Snapshots of this project are stored in nexus.ccctechcenter.org. See 
-https://cccnext.jira.com/wiki/spaces/CE/pages/79921694/Nexus for instructions on configuring your local
-Maven environment to use this repository.
+Currently available package versions:
+https://github.com/ccctechcenter/colleague-dmi-client/packages/41836/versions
 
-### Maven Dependencies ###
-
-__Step 1: Add the nexus.ccctechcenter.org repository__
+To include this package as a dependency in another project, add the following to that project's pom.xml
 
 ```xml
-<repositories>
-    <repository>
-        <id>nexus.ccctechcenter.org</id>
-        <name>ccctech</name>
-        <url>http://nexus.ccctechcenter.org/content/groups/public</url>
-        <snapshots>
-            <enabled>true</enabled>
-        </snapshots>
-    </repository>
-</repositories>    
-```
+    </dependencies>
+        <dependency>
+            <groupId>org.ccctechcenter</groupId>
+            <artifactId>colleague-dmi-client</artifactId>
+            <version>1.2.1</version> <!-- latest version at time of this writing -->
+        </dependency>
+    </dependencies>
 
-__Step 2: Add the dependency__
-
-```xml
-<dependencies>
-    <dependency>
-        <groupId>org.ccctech</groupId>
-        <artifactId>colleague-dmi-client</artifactId>
-        <version>(current version)</version>
-    </dependency>
-</dependencies>
+    </repositories>
+        <repository>
+            <id>github</id>
+            <name>github</name>
+            <url>https://maven.pkg.github.com/ccctechcenter</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 ```
 
 ### Configuration ###

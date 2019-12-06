@@ -1,3 +1,9 @@
+/**
+* Copyright (c) 2019 California Community Colleges Technology Center
+* Licensed under the MIT license.
+* A copy of this license may be found at https://opensource.org/licenses/mit-license.php
+**/
+
 package org.ccctc.colleaguedmiclient.service;
 
 import lombok.AccessLevel;
